@@ -1,0 +1,43 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+*{
+  font-family: "Poppins", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+*::selection {
+  background-color: rgb(40, 45, 70);
+  color: white;
+}
+
+:root {
+  --green: #00D084;
+  --sandal: #FFF7E5;
+}
+
+.react-tel-input {
+  background-color: var(--sandal) !important;
+  border: none !important;
+}
+
+.react-tel-input .form-control {
+  border: none !important;
+}
+
+.react-tel-input .flag-dropdown {
+  background-color: var(--sandal) !important;
+  border: none !important;
+}
+
+.react-tel-input input {
+  background-color: var(--sandal) !important;
+}
