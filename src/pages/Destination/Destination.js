@@ -130,7 +130,18 @@ const Destination = () => {
   };
 
   const handleEdit = (place) => {
-    setEditingPlace(place);
+    // Ensure all required fields are present
+    const editPlace = {
+      _id: place._id,
+      place_name: place.place_name,
+      Location: place.Location,
+      Nearby: place.Nearby,
+      best_time: place.best_time,
+      short_summary: place.short_summary,
+      latitude: place.latitude,
+      longitude: place.longitude
+    };
+    setEditingPlace(editPlace);
     setIsEditModalOpen(true);
   };
 

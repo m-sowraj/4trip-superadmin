@@ -37,6 +37,20 @@ const Modal = ({setIsOpen, onUpdate, editingPlace}) => {
     fetchLocations();
   }, []);
 
+  // Add useEffect to handle editingPlace data and set selectedLocation
+  useEffect(() => {
+    if (editingPlace && locations.length > 0) {
+      const location = locations.find(loc => loc.name === editingPlace.Location);
+      if (location) {
+        setSelectedLocation(location);
+        setPlaceData(prev => ({
+          ...prev,
+          location: location._id
+        }));
+      }
+    }
+  }, [editingPlace, locations]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setPlaceData({ ...placeData, [name]: value });
@@ -79,8 +93,8 @@ const Modal = ({setIsOpen, onUpdate, editingPlace}) => {
     const longitude = selectedLocation.longitude?.$numberDecimal || selectedLocation.longitude;
 
     const url = editingPlace 
-      ? `https://fourtrip-server.onrender.com/api/superadmin/places/${editingPlace._id}`
-      : 'https://fourtrip-server.onrender.com/api/superadmin/places';
+      ? `${API_BASE_URL}/superadmin/places/${editingPlace._id}`
+      : `${API_BASE_URL}/superadmin/places`;
 
     const method = editingPlace ? 'PUT' : 'POST';
 

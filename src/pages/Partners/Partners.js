@@ -17,7 +17,7 @@ const PartnersTable = () => {
 
   const fetchPartners = async () => {
     try {
-      const response = await fetch("https://fourtrip-server.onrender.com/api/commonauth/users?type=partner");
+      const response = await fetch("https://fourtrip-server.onrender.com/api/commonauth/users?type=partner&is_new=false");
       const data = await response.json();
       setPartners(data.data);
     } catch (error) {

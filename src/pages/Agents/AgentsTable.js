@@ -18,7 +18,7 @@ const AgentsTable = () => {
     // Add fetchAgents function
     const fetchAgents = async () => {
         try {
-            const response = await fetch("https://fourtrip-server.onrender.com/api/commonauth/users?type=agent");
+            const response = await fetch("https://fourtrip-server.onrender.com/api/commonauth/users?type=agent&is_new=false");
             const data = await response.json();
             setAllData(data.data);
         } catch (error) {
