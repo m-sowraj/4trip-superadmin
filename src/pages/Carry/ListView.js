@@ -1,115 +1,138 @@
 import { Trash2 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
+import { API_BASE_URL } from '../../utils/config';
 
 const ListView = () => {
-  // State for managing items, modal visibility, and form fields
   const [items, setItems] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newItemName, setNewItemName] = useState('');
-  const [newItemImage, setNewItemImage] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedLocation, setSelectedLocation] = useState('');
+  const [locations, setLocations] = useState([]);
 
-  // Function to handle modal open/close
-  const toggleModal = () => {
-    setIsModalOpen(!isModalOpen);
-  };
+  // Fetch locations
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/locations`);
+        if (!response.ok) throw new Error('Failed to fetch locations');
+        const data = await response.json();
+        setLocations(data);
+        setLoading(false);
+      } catch (error) {
+        toast.error(error.message);
+        setLoading(false);
+      }
+    };
 
-  // Handle form submission to add a new item
-  const handleAddItem = () => {
-    if (newItemName && newItemImage) {
-      const newItem = {
-        id: items.length + 1,
-        name: newItemName,
-        image: URL.createObjectURL(newItemImage), // Create a URL for the image
-      };
-      setItems([...items, newItem]);
-      setNewItemName('');
-      setNewItemImage(null);
-      toggleModal(); // Close the modal after adding
-    } else {
-      alert('Please provide both item name and image.');
+    fetchLocations();
+  }, []);
+
+  // Fetch items when location changes
+  useEffect(() => {
+    const fetchItems = async () => {
+      if (!selectedLocation) {
+        setItems([]);
+        return;
+      }
+      
+      setLoading(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/superadmin/thingstocarry/${selectedLocation}`);
+        if (!response.ok) throw new Error('Failed to fetch items');
+        const data = await response.json();
+        setItems(data.data || []);
+      } catch (error) {
+        toast.error(error.message);
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchItems();
+  }, [selectedLocation]);
+
+  const handleDelete = async (itemId) => {
+    if (!window.confirm('Are you sure you want to delete this item?')) return;
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/superadmin/thingstocarry/${selectedLocation}/${itemId}`,
+        { method: 'DELETE' }
+      );
+      
+      if (!response.ok) throw new Error('Failed to delete item');
+      
+      toast.success('Item deleted successfully');
+      setItems(items.filter(item => item.id !== itemId));
+    } catch (error) {
+      toast.error(error.message);
     }
   };
 
   return (
-    <div>
-      {/* Header and Add Item Button */}
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-medium">List of Things</h1>
-        <button
-          onClick={toggleModal}
-          className="bg-[#E27D60] text-white px-4 py-2 rounded-lg"
-        >
-          Add item
-        </button>
+    <div className="flex flex-col h-full bg-white rounded-lg shadow-md">
+      <div className="p-6 border-b">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-medium">List of Things to Carry</h1>
+          <select
+            value={selectedLocation}
+            onChange={(e) => setSelectedLocation(e.target.value)}
+            className="border rounded-md px-4 py-2 min-w-[200px]"
+          >
+            <option value="">Select Location</option>
+            {locations.map((location) => (
+              <option key={location._id} value={location._id}>
+                {location.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      {/* Table */}
-      <table className="w-full table-auto border-none bg-white">
-        <thead>
-          <tr>
-            <th className="px-4 py-2 bg-gray-200 text-gray-700">Sr No.</th>
-            <th className="px-4 py-2 bg-gray-200 text-gray-700">Name</th>
-            <th className="px-4 py-2 bg-gray-200 text-gray-700">Image</th>
-            <th className="px-4 py-2 bg-gray-200 text-gray-700">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item, index) => (
-            <tr key={item.id} className="border-b">
-              <td className="px-4 py-2 text-center">{index + 1}</td>
-              <td className="px-4 py-2 text-center">{item.name}</td>
-              <td className="px-4 py-2 text-center">
-                {/* <img src={item.image} alt={item.name} className="flex justify-center w-16 h-16 object-cover text-center" /> */}
-              </td>
-              <td className="px-4 py-2 text-center flex items-center justify-center gap-2">
-                <button className="bg-[#E27D60] px-2 py-1 text-white text-sm rounded-md hover:text-blue-700">View Edit</button>
-                <Trash2 className="w-5 h-5 text-[#E27D60] cursor-pointer" />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* Modal for adding item */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-1/3">
-            <h2 className="text-xl font-semibold mb-4">Add Item</h2>
-            <div className="mb-4">
-              <label className="block mb-2">Item Name</label>
-              <input
-                type="text"
-                value={newItemName}
-                onChange={(e) => setNewItemName(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg"
-                placeholder="Enter item name"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block mb-2">Item Image</label>
-              <input
-                type="file"
-                onChange={(e) => setNewItemImage(e.target.files[0])}
-                className="w-full p-2 border border-gray-300 rounded-lg"
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={toggleModal}
-                className="bg-gray-300 px-4 py-2 rounded-lg hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddItem}
-                className="bg-[#E27D60] text-white px-4 py-2 rounded-lg"
-              >
-                Add Item
-              </button>
-            </div>
+      <div className="flex-1 overflow-auto p-6">
+        {loading ? (
+          <div className="text-center py-8">Loading...</div>
+        ) : !selectedLocation ? (
+          <div className="text-center py-8 text-gray-500">
+            Please select a location to view items
           </div>
-        </div>
-      )}
+        ) : items.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No items found for this location
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left">Sr No.</th>
+                  <th className="px-4 py-3 text-left">Item Name</th>
+                  {/* <th className="px-4 py-3 text-left">Location</th> */}
+                  <th className="px-4 py-3 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {items.map((item, index) => (
+                  <tr key={item.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">{index + 1}</td>
+                    <td className="px-4 py-3">{item.name}</td>
+                    {/* <td className="px-4 py-3">{item.location_name}</td> */}
+                    <td className="px-4 py-3">
+                      <div className="flex gap-3">
+                        <Trash2
+                          className="w-5 h-5 text-red-600 cursor-pointer hover:text-red-700"
+                          onClick={() => handleDelete(item.id)}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

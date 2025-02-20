@@ -11,6 +11,8 @@ const Destination = () => {
   const [dateFilter, setDateFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("Active");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingPlace, setEditingPlace] = useState(null);
 
   const [Destination, setDestination] = useState([]);
 
@@ -127,29 +129,9 @@ const Destination = () => {
     }
   };
 
-  const handleEdit = async (place) => {
-    try {
-      const response = await fetch(`https://fourtrip-server.onrender.com/api/superadmin/places/${place._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          place_name: place.place_name,
-          location: place.location,
-          nearby: place.nearby,
-          best_time: place.best_time,
-          short_summary: place.short_summary,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to update place');
-      
-      toast.success('Place updated successfully');
-      fetchDestinations();
-    } catch (error) {
-      toast.error(error.message);
-    }
+  const handleEdit = (place) => {
+    setEditingPlace(place);
+    setIsEditModalOpen(true);
   };
 
   const handleDelete = async (id) => {
@@ -157,7 +139,13 @@ const Destination = () => {
 
     try {
       const response = await fetch(`https://fourtrip-server.onrender.com/api/superadmin/places/${id}`, {
-        method: 'DELETE',
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          delete: true
+        }),
       });
 
       if (!response.ok) throw new Error('Failed to delete place');
@@ -171,7 +159,19 @@ const Destination = () => {
 
   return (
     <div className="w-full h-[90%] flex flex-col">
-      {isModalOpen && <Modal setIsOpen={setIsModalOpen} onUpdate={() => fetchDestinations()} />}
+      {isModalOpen && (
+        <Modal 
+          setIsOpen={setIsModalOpen} 
+          onUpdate={() => fetchDestinations()} 
+        />
+      )}
+      {isEditModalOpen && (
+        <Modal 
+          setIsOpen={setIsEditModalOpen}
+          onUpdate={() => fetchDestinations()}
+          editingPlace={editingPlace}
+        />
+      )}
       
       <div className="flex items-center justify-between w-full mb-4">
         <div className="font-medium text-black text-xl">Place to Visit</div>
@@ -220,7 +220,7 @@ const Destination = () => {
                   Download
                 </button>
                 {dropdownOpen && (
-                  <div className="absolute bg-white border border-gray-300 shadow-lg rounded-lg mt-2 w-40 z-10">
+                  <div className="absolute right-0 bg-white border border-gray-300 shadow-lg rounded-lg mt-2 w-40 z-40">
                     <ul className="py-2">
                       <li
                         className="px-4 py-2 hover:bg-gray-100 cursor-pointer"

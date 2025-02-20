@@ -1,20 +1,51 @@
 import { X } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
+import { API_BASE_URL } from '../../utils/config';
 
-const Modal = ({setIsOpen, onUpdate}) => {
+const Modal = ({setIsOpen, onUpdate, editingPlace}) => {
   const [placeData, setPlaceData] = useState({
-    name: '',
-    location: '',
-    nearbyAttractions: '',
-    bestTimeToVisit: '',
-    summary: '',
+    name: editingPlace?.place_name || '',
+    location: editingPlace?.Location || '',
+    nearbyAttractions: editingPlace?.Nearby || '',
+    bestTimeToVisit: editingPlace?.best_time || '',
+    summary: editingPlace?.short_summary || '',
     images: [],
     videos: [],
   });
 
+  const [locations, setLocations] = useState([]);
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(true);
+
+  // Fetch locations when component mounts
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/locations`);
+        if (!response.ok) throw new Error('Failed to fetch locations');
+        const data = await response.json();
+        setLocations(data);
+      } catch (error) {
+        toast.error('Error loading locations');
+        console.error('Error:', error);
+      } finally {
+        setIsLoadingLocations(false);
+      }
+    };
+
+    fetchLocations();
+  }, []);
+
   const handleInputChange = (e) => {
-    setPlaceData({ ...placeData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setPlaceData({ ...placeData, [name]: value });
+
+    // When location is selected, update selectedLocation
+    if (name === 'location') {
+      const location = locations.find(loc => loc._id === value);
+      setSelectedLocation(location);
+    }
   };
 
   const handleImageUpload = (e) => {
@@ -35,95 +66,68 @@ const Modal = ({setIsOpen, onUpdate}) => {
       images: [],
       videos: [],
     });
+    setSelectedLocation(null);
   };
 
-  const handleSave = () => {
-    console.log(placeData);
-    // POST METHOD
-    fetch('https://fourtrip-server.onrender.com/api/superadmin/places', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            place_name: placeData.name,
-            Location: placeData.location,
-            Nearby: placeData.nearbyAttractions,
-            best_time: placeData.bestTimeToVisit,
-            short_summary: placeData.summary,
-            lattitude: 1,
-            longitude: 1
-            // images: placeData.images,
-            // videos: placeData.videos,
-        }),
-    })
-        .then((response) => response.json())
-        .then((data) => {
-            if (data.message !== "Missing Information") {
-            toast.success('Place added successfully');
-            console.log(data);
-            }
-            else {
-                toast.error('Missing Information');
-            }
-        })
-        .catch((error) => {
-            toast.error('Error adding place',error);
-            console.error('Error:', error);
-        });
-  };
+  const handleSave = async () => {
+    if (!selectedLocation) {
+      toast.error('Please select a location');
+      return;
+    }
 
-  const handleEdit = async (place) => {
+    const latitude = selectedLocation.latitude?.$numberDecimal || selectedLocation.latitude;
+    const longitude = selectedLocation.longitude?.$numberDecimal || selectedLocation.longitude;
+
+    const url = editingPlace 
+      ? `https://fourtrip-server.onrender.com/api/superadmin/places/${editingPlace._id}`
+      : 'https://fourtrip-server.onrender.com/api/superadmin/places';
+
+    const method = editingPlace ? 'PUT' : 'POST';
+
     try {
-      const response = await fetch(`https://fourtrip-server.onrender.com/api/superadmin/places/${place._id}`, {
-        method: 'PUT',
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           place_name: placeData.name,
-          location: placeData.location,
-          nearby: placeData.nearbyAttractions,
+          Location: selectedLocation.name,
+          Nearby: placeData.nearbyAttractions,
           best_time: placeData.bestTimeToVisit,
           short_summary: placeData.summary,
+          lattitude: latitude,
+          longitude: longitude
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to update place');
+      const data = await response.json();
       
-      toast.success('Place updated successfully');
-      onUpdate();
-      setIsOpen(false);
+      if (response.ok) {
+        toast.success(editingPlace ? 'Place updated successfully' : 'Place added successfully');
+        setIsOpen(false);
+        if (onUpdate) onUpdate();
+      } else {
+        toast.error(data.message || 'Operation failed');
+      }
     } catch (error) {
-      toast.error(error.message);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this place?')) return;
-
-    try {
-      const response = await fetch(`https://fourtrip-server.onrender.com/api/superadmin/places/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) throw new Error('Failed to delete place');
-      
-      toast.success('Place deleted successfully');
-      onUpdate();
-    } catch (error) {
-      toast.error(error.message);
+      toast.error('Error saving place');
+      console.error('Error:', error);
     }
   };
 
   return (
-    <div className="fixed z-10 inset-0 overflow-y-auto bg-black/50">
+    <div className="fixed z-50 inset-0 overflow-y-auto bg-black/50">
       <ToastContainer />
       <div className="flex items-center justify-center min-h-screen p-4">
         <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl p-6">
           <div className='w-full flex items-center justify-between mb-4'>
-            <h2 className="text-lg font-medium">Place to visit</h2>
-            <div onClick={()=>{setIsOpen(false)}}> <X className='w-5 h-5 text-red-500 font-bold cursor-pointer' /> </div>
+            <h2 className="text-lg font-medium">
+              {editingPlace ? 'Edit Place' : 'Add New Place'}
+            </h2>
+            <div onClick={()=>{setIsOpen(false)}}> 
+              <X className='w-5 h-5 text-red-500 font-bold cursor-pointer' /> 
+            </div>
           </div>
 
           <div className='flex gap-4'>
@@ -145,14 +149,24 @@ const Modal = ({setIsOpen, onUpdate}) => {
               <label htmlFor="location" className="block text-gray-700 font-medium mb-2">
                 Location
               </label>
-              <input
-                type="text"
-                id="location"
-                name="location"
-                value={placeData.location}
-                onChange={handleInputChange}
-                className="border rounded-md px-3 py-2 w-full bg-[var(--sandal)]"
-              />
+              {isLoadingLocations ? (
+                <div className="border rounded-md px-3 py-2 bg-gray-100">Loading locations...</div>
+              ) : (
+                <select
+                  id="location"
+                  name="location"
+                  value={placeData.location}
+                  onChange={handleInputChange}
+                  className="border rounded-md px-3 py-2 w-full bg-[var(--sandal)]"
+                >
+                  <option value="">Select a location</option>
+                  {locations.map((location) => (
+                    <option key={location._id} value={location._id}>
+                      {location.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 
@@ -219,7 +233,7 @@ const Modal = ({setIsOpen, onUpdate}) => {
               onClick={handleSave}
               className="bg-[#E27D60] text-white font-medium py-2 px-4 rounded"
             >
-              Save
+              {editingPlace ? 'Update' : 'Save'}
             </button>
           </div>
         </div>

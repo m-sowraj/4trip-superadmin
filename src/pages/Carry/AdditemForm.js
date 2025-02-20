@@ -1,121 +1,166 @@
 import { Pencil } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
+import { API_BASE_URL } from '../../utils/config';
 
 const AddItemForm = () => {
-  const [name, setName] = useState('');
-  const [location, setLocation] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState('');
+  const [locations, setLocations] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // List of items to select from
-  const items = ['Bag', 'Case', 'Card', 'Laptop', 'Headphones', 'Charger'];
+  // Static items list
+  const staticItems = [
+    'Bag', 'Water Bottle', 'First Aid Kit', 'Flashlight', 
+    'Snacks', 'Camera', 'Power Bank', 'Umbrella',
+    'Sunscreen', 'Hat', 'Walking Shoes', 'Map'
+  ];
 
-  // Toggle item selection
+  // Fetch locations on component mount
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/locations`);
+        if (!response.ok) throw new Error('Failed to fetch locations');
+        const data = await response.json();
+        setLocations(data);
+      } catch (error) {
+        toast.error(error.message);
+      }
+    };
+
+    fetchLocations();
+  }, []);
+
+  // Handle item selection
   const handleItemSelect = (item) => {
-    setSelectedItems((prevItems) =>
-      prevItems.includes(item)
-        ? prevItems.filter((i) => i !== item)
-        : [...prevItems, item]
+    setSelectedItems(prev => 
+      prev.includes(item) 
+        ? prev.filter(i => i !== item)
+        : [...prev, item]
+    );
+  };
+
+  // Handle select all
+  const handleSelectAll = () => {
+    setSelectedItems(prev => 
+      prev.length === staticItems.length ? [] : [...staticItems]
     );
   };
 
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Name:', name);
-    console.log('Location:', location);
-    console.log('Selected items:', selectedItems);
-  };
+    if (!selectedLocation || selectedItems.length === 0) {
+      toast.error('Please select a location and at least one item');
+      return;
+    }
 
-  // Clear form fields and selected items
-  const handleClear = () => {
-    setName('');
-    setLocation('');
-    setSelectedItems([]);
-  };
+    setIsSubmitting(true);
+    try {
+      // Submit each selected item for the location
+      await Promise.all(selectedItems.map(item => 
+        fetch(`${API_BASE_URL}/superadmin/thingstocarry`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: item,
+            location_id: selectedLocation
+          }),
+        })
+      ));
 
-  // Select all items
-  const handleSelectAll = () => {
-    if (selectedItems.length === items.length) {
-      setSelectedItems([]); // Deselect all if all are selected
-    } else {
-      setSelectedItems(items); // Select all if none are selected
+      toast.success('Items added successfully');
+      setSelectedItems([]);
+      setSelectedLocation('');
+    } catch (error) {
+      toast.error('Failed to add items');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mt-6">
-      <h2 className="text-lg font-medium mb-4">Add Thing to Carry</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="flex items-center gap-2">
-          <div>
-            <label htmlFor="name" className="block text-gray-700 font-medium mb-2">
-              Enter Name
-            </label>
-            <input
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="border rounded-md px-3 py-2 w-full"
-            />
-          </div>
-          <div>
-            <label htmlFor="location" className="block text-gray-700 font-medium mb-2">
-              Enter Location
-            </label>
-            <input
-              type="text"
-              id="location"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="border rounded-md px-3 py-2 w-full"
-            />
-          </div>
-        </div>
+    <div className="flex flex-col h-full bg-white rounded-lg shadow-md">
+      <div className="p-6">
+        <h2 className="text-lg font-medium mb-4">Add Things to Carry</h2>
+      </div>
 
-        <div className="w-full flex items-start justify-between">
-          <div>Select Items</div>
-          <div
-            onClick={handleSelectAll}
-            className="text-gray-600 flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <Pencil className="w-4 h-4" /> Select All
-          </div>
-        </div>
-
-        <div>
-          <div className="grid grid-cols-3 gap-2">
-            {items.map((item, index) => (
-              <button
-                key={index}
-                type="button"
-                onClick={() => handleItemSelect(item)}
-                className={`border-2 px-3 py-2 rounded-full ${
-                  selectedItems.includes(item)
-                    ? 'bg-[#E27D60] text-white'
-                    : 'hover:bg-gray-300'
-                }`}
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1">
+        <div className="px-6 flex-1 overflow-auto">
+          <div className="space-y-4">
+            <div className="sticky top-0 bg-white pt-2 pb-4 z-10">
+              <label htmlFor="location" className="block text-gray-700 font-medium mb-2">
+                Select Location
+              </label>
+              <select
+                id="location"
+                value={selectedLocation}
+                onChange={(e) => setSelectedLocation(e.target.value)}
+                className="border rounded-md px-3 py-2 w-full"
               >
-                {item}
+                <option value="">Select a location</option>
+                {locations.map((location) => (
+                  <option key={location._id} value={location._id}>
+                    {location.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="sticky top-[100px] bg-white py-2 z-10 flex items-center justify-between">
+              <label className="text-gray-700 font-medium">Select Items</label>
+              <button
+                type="button"
+                onClick={handleSelectAll}
+                className="text-blue-600 flex items-center gap-2"
+              >
+                <Pencil className="w-4 h-4" />
+                {selectedItems.length === staticItems.length ? 'Deselect All' : 'Select All'}
               </button>
-            ))}
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 pb-4">
+              {staticItems.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => handleItemSelect(item)}
+                  className={`border-2 px-3 py-2 rounded-lg transition-colors ${
+                    selectedItems.includes(item)
+                      ? 'bg-[#E27D60] text-white border-[#E27D60]'
+                      : 'border-gray-300 hover:border-[#E27D60]'
+                  }`}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="flex justify-end gap-4 mt-6">
-          <button
-            type="button"
-            onClick={handleClear}
-            className="border text-black font-medium py-1 px-4 rounded-lg"
-          >
-            Clear
-          </button>
-          <button
-            type="submit"
-            className="bg-[#E27D60] text-white font-medium py-1 px-4 rounded-lg"
-          >
-            Save
-          </button>
+        <div className="p-6 border-t bg-white mt-auto">
+          <div className="flex justify-end gap-4">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedItems([]);
+                setSelectedLocation('');
+              }}
+              className="border text-black font-medium py-2 px-4 rounded-lg"
+            >
+              Clear
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`bg-[#E27D60] text-white font-medium py-2 px-4 rounded-lg ${
+                isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              {isSubmitting ? 'Adding...' : 'Save'}
+            </button>
+          </div>
         </div>
       </form>
     </div>

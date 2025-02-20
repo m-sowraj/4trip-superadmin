@@ -9,7 +9,7 @@ function Carry() {
         // Add more data here
       ];
     return (
-    <div className="flex-1 p-6">
+    <div className="flex-1 p-6 overflow-y-auto">
         <ListView data={data} />
         <AddItemForm />
     </div>
