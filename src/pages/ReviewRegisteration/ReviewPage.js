@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 import AgentsTableReview from './Agents';
 import PartnersTableReview from './Partners';
 import { toast, ToastContainer } from 'react-toastify';
+import axios from '../../utils/axios';
 
 function ReviewPage() {
     const [active, setActive] = useState("agents");
@@ -11,9 +12,8 @@ function ReviewPage() {
 
     const fetchData = async () => {
         try {
-            const response = await fetch("https://fourtrip-server.onrender.com/api/superadmin/reviewdata");
-            const data = await response.json();
-            setAllData(data.data);
+            const response = await axios.get('/superadmin/reviewdata');
+            setAllData(response.data.data);
         } catch (error) {
             toast.error(error.message);
         }

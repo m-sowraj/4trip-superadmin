@@ -2,6 +2,7 @@ import { Trash2 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { API_BASE_URL } from '../../utils/config';
+import axiosInstance from "../../utils/axios";
 
 const ListView = () => {
   const [items, setItems] = useState([]);
@@ -13,10 +14,8 @@ const ListView = () => {
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/locations`);
-        if (!response.ok) throw new Error('Failed to fetch locations');
-        const data = await response.json();
-        setLocations(data);
+        const response = await axiosInstance.get("/locations");
+        setLocations(response.data);
         setLoading(false);
       } catch (error) {
         toast.error(error.message);
@@ -37,10 +36,8 @@ const ListView = () => {
       
       setLoading(true);
       try {
-        const response = await fetch(`${API_BASE_URL}/superadmin/thingstocarry/${selectedLocation}`);
-        if (!response.ok) throw new Error('Failed to fetch items');
-        const data = await response.json();
-        setItems(data.data || []);
+        const response = await axiosInstance.get(`/superadmin/thingstocarry/${selectedLocation}`);
+        setItems(response.data.data || []);
       } catch (error) {
         toast.error(error.message);
         setItems([]);
@@ -56,10 +53,7 @@ const ListView = () => {
     if (!window.confirm('Are you sure you want to delete this item?')) return;
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/superadmin/thingstocarry/${selectedLocation}/${itemId}`,
-        { method: 'DELETE' }
-      );
+      const response = await axiosInstance.delete(`/superadmin/thingstocarry/${selectedLocation}/${itemId}`);
       
       if (!response.ok) throw new Error('Failed to delete item');
       

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import { API_BASE_URL } from '../../utils/config';
+import axios from '../../utils/axios';
 
 const CreateLocation = () => {
   const [formData, setFormData] = useState({
@@ -39,17 +39,10 @@ const CreateLocation = () => {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/locations`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await axios.post('/locations', formData);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create location.');
+      if (response.status !== 201) {
+        throw new Error(response.data.message || 'Failed to create location.');
       }
 
       toast.success('Location created successfully!');
@@ -117,4 +110,4 @@ const CreateLocation = () => {
   );
 };
 
-export default CreateLocation; 
+export default CreateLocation;

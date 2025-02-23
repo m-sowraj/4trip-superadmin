@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { API_BASE_URL } from '../../utils/config';
+import axios from '../../utils/axios';
 
 const EditLocation = () => {
   const { id } = useParams();
@@ -19,15 +19,11 @@ const EditLocation = () => {
   useEffect(() => {
     const fetchLocation = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/locations/${id}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch location details.');
-        }
-        const data = await response.json();
+        const response = await axios.get(`/locations/${id}`);
         setFormData({
-          name: data.name,
-          latitude: data.latitude.$numberDecimal || data.latitude,
-          longitude: data.longitude.$numberDecimal || data.longitude,
+          name: response.data.name,
+          latitude: response.data.latitude.$numberDecimal || response.data.latitude,
+          longitude: response.data.longitude.$numberDecimal || response.data.longitude,
         });
       } catch (error) {
         toast.error(error.message);
@@ -67,17 +63,10 @@ const EditLocation = () => {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/locations/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await axios.put(`/locations/${id}`, formData);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update location.');
+      if (response.status !== 200) {
+        throw new Error(response.data.message || 'Failed to update location.');
       }
 
       toast.success('Location updated successfully!');
@@ -149,4 +138,4 @@ const EditLocation = () => {
   );
 };
 
-export default EditLocation; 
+export default EditLocation;

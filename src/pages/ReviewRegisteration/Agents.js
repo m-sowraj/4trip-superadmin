@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { toast } from "react-toastify";
+import axios from '../../utils/axios';
 
 // Add Cross as an alias for X
 const Cross = X;
@@ -154,17 +155,11 @@ const AgentsTableReview = ({ agents, onUpdate }) => {
   // Add accept/decline handlers
   const handleAccept = async (id) => {
     try {
-      const response = await fetch(`https://fourtrip-server.onrender.com/api/commonauth/user/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          isNew: false
-        }),
+      const response = await axios.put(`/commonauth/user/${id}`, {
+        isNew: false
       });
 
-      if (!response.ok) throw new Error('Failed to accept agent');
+      if (response.status !== 200) throw new Error('Failed to accept agent');
       
       toast.success('Agent accepted successfully');
       onUpdate();
@@ -175,19 +170,13 @@ const AgentsTableReview = ({ agents, onUpdate }) => {
 
   const handleDecline = async (id) => {
     try {
-      const response = await fetch(`https://fourtrip-server.onrender.com/api/commonauth/user/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          isActive: false,
-          status: "Declined",
-          isNew: false
-        }),
+      const response = await axios.put(`/commonauth/user/${id}`, {
+        isActive: false,
+        status: "Declined",
+        isNew: false
       });
 
-      if (!response.ok) throw new Error('Failed to decline agent');
+      if (response.status !== 200) throw new Error('Failed to decline agent');
       
       toast.success('Agent declined successfully');
       onUpdate();

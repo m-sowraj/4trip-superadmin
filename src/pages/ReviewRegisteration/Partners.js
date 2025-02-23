@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { toast } from "react-toastify";
+import axios from '../../utils/axios';
 
 // Add ViewModal component
 const ViewModal = ({ isOpen, onClose, partner }) => {
@@ -150,17 +151,11 @@ const PartnersTableReview = ({ Partners, onUpdate }) => {
   // Add accept/decline handlers
   const handleAccept = async (id) => {
     try {
-      const response = await fetch(`https://fourtrip-server.onrender.com/api/commonauth/user/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          isNew: false
-        }),
+      const response = await axios.put(`/commonauth/user/${id}`, {
+        isNew: false
       });
 
-      if (!response.ok) throw new Error('Failed to accept partner');
+      if (response.status !== 200) throw new Error('Failed to accept partner');
       
       toast.success('Partner accepted successfully');
       onUpdate();
@@ -171,19 +166,13 @@ const PartnersTableReview = ({ Partners, onUpdate }) => {
 
   const handleDecline = async (id) => {
     try {
-      const response = await fetch(`https://fourtrip-server.onrender.com/api/commonauth/user/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          isActive: false,
-          status: "Declined",
-          isNew: false
-        }),
+      const response = await axios.put(`/commonauth/user/${id}`, {
+        isActive: false,
+        status: "Declined",
+        isNew: false
       });
 
-      if (!response.ok) throw new Error('Failed to decline partner');
+      if (response.status !== 200) throw new Error('Failed to decline partner');
       
       toast.success('Partner declined successfully');
       onUpdate();
