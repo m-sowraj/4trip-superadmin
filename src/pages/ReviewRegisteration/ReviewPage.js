@@ -15,7 +15,7 @@ function ReviewPage() {
             const response = await axios.get('/superadmin/reviewdata');
             setAllData(response.data.data);
         } catch (error) {
-            toast.error(error.message);
+            // toast.error(error.message);
         }
     };
 
@@ -33,7 +33,7 @@ function ReviewPage() {
     }, [allData]);
 
     return (
-        <div className="h-[90%] flex flex-col">
+        <div className="h-[99%] flex flex-col">
             <div className="flex gap-5">
                 <div 
                     className={`px-4 py-1 bg-white cursor-pointer flex items-center gap-2 rounded-full ${active === "agents" ? "border-2" : "border-white border-2"}`} 

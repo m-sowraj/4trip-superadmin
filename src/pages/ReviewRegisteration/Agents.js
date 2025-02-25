@@ -1,5 +1,5 @@
 import { Edit, SearchIcon, Trash, X, Eye, Check } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
@@ -14,63 +14,110 @@ const ViewModal = ({ isOpen, onClose, agent }) => {
   if (!isOpen || !agent) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Agent Details</h2>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
-            <X className="w-5 h-5" />
-          </button>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl transform transition-all">
+        <div className="flex gap-6">
+          {/* Logo Section - Left Side */}
+          <div className="flex-shrink-0">
+            {agent.logo_url ? (
+              <div className="relative w-40 h-40">
+                <img 
+                  src={agent.logo_url} 
+                  alt={`${agent.business_name} logo`}
+                  className="w-full h-full rounded-2xl object-cover border-2 border-gray-100 shadow-md"
+                />
+                <div className="absolute inset-0 rounded-2xl ring-1 ring-black/5"></div>
+              </div>
+            ) : (
+              <div className="w-40 h-40 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center border-2 border-gray-100 shadow-md">
+                <span className="text-5xl font-semibold text-gray-400">
+                  {agent.business_name?.charAt(0) || agent.owner_name?.charAt(0)}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Header and Content - Right Side */}
+          <div className="flex-1">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">{agent.business_name || agent.owner_name}</h2>
+                <p className="text-gray-500 mt-1">{agent.email}</p>
+              </div>
+              <button 
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
+              >
+                <X className="w-6 h-6 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div className="border-b mb-6"></div>
+          </div>
         </div>
-        
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="font-medium text-gray-700">Business Name</label>
-              <p>{agent.business_name}</p>
-            </div>
-            <div>
-              <label className="font-medium text-gray-700">Owner Name</label>
-              <p>{agent.owner_name}</p>
-            </div>
-            <div>
-              <label className="font-medium text-gray-700">Email</label>
-              <p>{agent.email}</p>
-            </div>
-            <div>
-              <label className="font-medium text-gray-700">Phone Number</label>
-              <p>{agent.phone_number}</p>
-            </div>
-            <div>
-              <label className="font-medium text-gray-700">Category</label>
-              <p>{agent.select_category}</p>
-            </div>
-            <div>
-              <label className="font-medium text-gray-700">Shop Type</label>
-              <p>{agent.shopType || 'N/A'}</p>
-            </div>
-            <div>
-              <label className="font-medium text-gray-700">Address</label>
-              <p>{agent.address}</p>
-            </div>
-            <div>
-              <label className="font-medium text-gray-700">City</label>
-              <p>{agent.city}</p>
-            </div>
-            <div>
-              <label className="font-medium text-gray-700">Pincode</label>
-              <p>{agent.pincode}</p>
+
+        {/* Rest of the content */}
+        <div className="space-y-6 mt-6">
+          {/* Personal Information Section */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Personal Details</h3>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-500">Business Name</label>
+                <p className="text-gray-800 mt-1">{agent.business_name || 'N/A'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Owner Name</label>
+                <p className="text-gray-800 mt-1">{agent.owner_name || 'N/A'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Email</label>
+                <p className="text-gray-800 mt-1">{agent.email || 'N/A'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Phone Number</label>
+                <p className="text-gray-800 mt-1">{agent.phone_number || 'N/A'}</p>
+              </div>
             </div>
           </div>
 
-          <div>
-            <label className="font-medium text-gray-700">Business Hours</label>
-            <div className="mt-1">
-              <p>Days: {agent.businessHours?.days?.join(', ') || 'N/A'}</p>
-              <p>Opening Time: {agent.businessHours?.openingTime || 'N/A'}</p>
-              <p>Closing Time: {agent.businessHours?.closingTime || 'N/A'}</p>
+          {/* Business Information Section */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Business Details</h3>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-500">Registration Type</label>
+                <p className="text-gray-800 mt-1">{agent.reg_type || 'N/A'}</p>
+              </div>
+              {/* <div>
+                <label className="text-sm font-medium text-gray-500">Status</label>
+                <p className={`mt-1 font-medium ${
+                  agent.status === 'Active' ? 'text-green-600' :
+                  agent.status === 'Pending' ? 'text-yellow-600' :
+                  'text-red-600'
+                }`}>
+                  {agent.status || 'N/A'}
+                </p>
+              </div> */}
+              <div>
+                <label className="text-sm font-medium text-gray-500">Registration Date</label>
+                <p className="text-gray-800 mt-1">
+                  {new Date(agent.createdAt).toLocaleDateString()}
+                </p>
+              </div>
             </div>
           </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-8 border-t pt-4 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>
@@ -85,6 +132,14 @@ const AgentsTableReview = ({ agents, onUpdate }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0); // Add this new state
+
+  // Add useEffect to trigger refresh
+  useEffect(() => {
+    if (refreshKey > 0) {
+      onUpdate();
+    }
+  }, [refreshKey, onUpdate]);
 
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
@@ -156,13 +211,15 @@ const AgentsTableReview = ({ agents, onUpdate }) => {
   const handleAccept = async (id) => {
     try {
       const response = await axios.put(`/commonauth/user/${id}`, {
-        isNew: false
+        isNew: false,
+        isActive: true,
+        status: "Active"
       });
 
       if (response.status !== 200) throw new Error('Failed to accept agent');
       
       toast.success('Agent accepted successfully');
-      onUpdate();
+      setRefreshKey(prev => prev + 1); // Trigger refresh
     } catch (error) {
       toast.error(error.message);
     }
@@ -179,14 +236,14 @@ const AgentsTableReview = ({ agents, onUpdate }) => {
       if (response.status !== 200) throw new Error('Failed to decline agent');
       
       toast.success('Agent declined successfully');
-      onUpdate();
+      setRefreshKey(prev => prev + 1); // Trigger refresh
     } catch (error) {
       toast.error(error.message);
     }
   };
 
   return (
-    <div className="w-full h-[90%] flex flex-col">
+    <div className="w-full h-[100%] flex flex-col">
       <div className="flex-1 bg-white rounded-lg shadow-md w-full flex flex-col overflow-hidden">
         {/* Search and Filters */}
         <div className="p-4">
@@ -288,11 +345,12 @@ const AgentsTableReview = ({ agents, onUpdate }) => {
               <thead className="bg-gray-100 sticky top-0 z-10">
                 <tr>
                   <th className="p-4 text-left">Sr. No.</th>
+                  <th className="p-4 text-left">Logo</th>
                   <th className="p-4 text-left">Agent Name</th>
                   <th className="p-4 text-left">Email</th>
                   <th className="p-4 text-left">Phone Number</th>
                   <th className="p-4 text-left">Registration Date</th>
-                  <th className="p-4 text-left">Status</th>
+                  {/* <th className="p-4 text-left">Status</th> */}
                   <th className="p-4 text-left">Actions</th>
                 </tr>
               </thead>
@@ -300,11 +358,24 @@ const AgentsTableReview = ({ agents, onUpdate }) => {
                 {filteredAgents?.map((agent, index) => (
                 <tr key={agent._id} className="border-t">
                     <td className="p-4">{index + 1}</td>
+                    <td className="p-4">
+                      {agent.logo_url ? (
+                        <img 
+                          src={agent.logo_url} 
+                          alt={`${agent.owner_name} logo`}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-500 text-sm">{agent.owner_name.charAt(0)}</span>
+                        </div>
+                      )}
+                    </td>
                     <td className="p-4">{agent.owner_name}</td>
                     <td className="p-4">{agent.email}</td>
                     <td className="p-4">{agent.phone_number}</td>
                     <td className="p-4">{agent.createdAt.split("T")[0]}</td>
-                    <td className={`p-4 ${getStatusClass(agent.status)}`}>{agent.status}</td>
+                    {/* <td className={`p-4 ${getStatusClass(agent.status)}`}>{agent.status}</td> */}
                     <td className="p-4 flex items-center space-x-2">
                       <button 
                         className="p-2 bg-blue-100 rounded-md hover:bg-blue-200"

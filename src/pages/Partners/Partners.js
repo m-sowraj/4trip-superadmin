@@ -33,13 +33,11 @@ const PartnersTable = () => {
     try {
       const response = await axios.put(`/commonauth/user/${id}`, updatedData);
 
-      if (response.status !== 200) throw new Error('Failed to update partner');
-      
       toast.success('Partner updated successfully');
       fetchPartners();
       setEditModalOpen(false);
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
@@ -51,12 +49,10 @@ const PartnersTable = () => {
         is_deleted: true
       });
 
-      if (response.status !== 200) throw new Error('Failed to delete partner');
-      
       toast.success('Partner deleted successfully');
       fetchPartners();
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
@@ -66,12 +62,10 @@ const PartnersTable = () => {
         isActive: !currentStatus
       });
 
-      if (response.status !== 200) throw new Error('Failed to update partner status');
-      
       toast.success(`Partner ${currentStatus ? 'frozen' : 'unfrozen'} successfully`);
       fetchPartners();
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
@@ -280,8 +274,8 @@ const PartnersTable = () => {
   };
 
   return (
-    <div className="w-full h-[90%] flex flex-col">
-      <div className="font-medium text-black text-xl p-4">Partners Management</div>
+    <div className="w-full h-[99%] flex flex-col">
+      {/* <div className="font-medium text-black text-xl p-4">Partners Management</div> */}
 
       <div className="flex-1 bg-white rounded-lg shadow-md w-full flex flex-col overflow-hidden">
         {/* Search and Filters */}
@@ -397,6 +391,7 @@ const PartnersTable = () => {
               <thead className="bg-gray-100 sticky top-0 z-10">
                 <tr>
                   <th className="p-4 text-left">Sr. No.</th>
+                  <th className="p-4 text-left">Logo</th>
                   <th className="p-4 text-left">Partner Name</th>
                   <th className="p-4 text-left">Category</th>
                   <th className="p-4 text-left">Phone Number</th>
@@ -409,6 +404,19 @@ const PartnersTable = () => {
                 {filteredPartners.map((partner, index) => (
                   <tr key={partner._id} className={`border-t ${partner.is_deleted || partner.status === "Declined" ? 'bg-gray-50' : ''}`}>
                     <td className="p-4">{index + 1}</td>
+                    <td className="p-4">
+                      {partner.logo_url ? (
+                        <img 
+                          src={partner.logo_url} 
+                          alt={`${partner.owner_name} logo`}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-500 text-sm">{partner.owner_name.charAt(0)}</span>
+                        </div>
+                      )}
+                    </td>
                     <td className={`p-4 ${partner.is_deleted ? 'text-gray-400' : ''}`}>{partner.owner_name}</td>
                     <td className={`p-4 ${partner.is_deleted ? 'text-gray-400' : ''}`}>{partner.select_category}</td>
                     <td className={`p-4 ${partner.is_deleted ? 'text-gray-400' : ''}`}>{partner.phone_number}</td>

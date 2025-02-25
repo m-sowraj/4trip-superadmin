@@ -17,7 +17,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className="min-w-fit text-white flex flex-col items-start shadow-lg shadow-gray-500/50 ">
+    <div className="min-w-fit bg-white text-white flex flex-col items-start shadow-lg shadow-gray-500/50 ">
       <nav className="flex flex-col">
         {menuItems.map((item) => (
           <NavLink

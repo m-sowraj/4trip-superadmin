@@ -3,14 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import { API_BASE_URL } from '../../utils/config';
 import axiosInstance from "../../utils/axios";
-import axiosInstance from "../../utils/axios";
+
 
 const Modal = ({setIsOpen, onUpdate, editingPlace}) => {
   const [placeData, setPlaceData] = useState({
     name: editingPlace?.place_name || '',
     location: editingPlace?.Location || '',
-    nearbyAttractions: editingPlace?.Nearby || '',
-    bestTimeToVisit: editingPlace?.best_time || '',
+    nearbyAttractions: editingPlace?.near_by_attractions || '',
+    bestTimeToVisit: editingPlace?.best_time_to_visit || '',
     summary: editingPlace?.short_summary || '',
     imageUrls: editingPlace?.image_urls || [],
     images: [],
@@ -101,6 +101,13 @@ const Modal = ({setIsOpen, onUpdate, editingPlace}) => {
     }
   };
 
+  const handleRemoveImage = (indexToRemove) => {
+    setPlaceData(prev => ({
+      ...prev,
+      imageUrls: prev.imageUrls.filter((_, index) => index !== indexToRemove)
+    }));
+  };
+
   const handleVideoUpload = (e) => {
     setPlaceData({ ...placeData, videos: [...placeData.videos, e.target.files[0]] });
   };
@@ -120,21 +127,18 @@ const Modal = ({setIsOpen, onUpdate, editingPlace}) => {
   };
 
   const handleSave = async () => {
-    if (!selectedLocation) {
-      toast.error('Please select a location');
+    if (!placeData.name || !selectedLocation) {
+      toast.error('Please fill in all required fields');
       return;
     }
-
-    const latitude = selectedLocation.latitude?.$numberDecimal || selectedLocation.latitude;
-    const longitude = selectedLocation.longitude?.$numberDecimal || selectedLocation.longitude;
-
-    const url = editingPlace 
-      ? `/superadmin/places/${editingPlace._id}`
-      : `/superadmin/places`;
-
-    const method = editingPlace ? 'PUT' : 'POST';
-
+  
     try {
+      const url = editingPlace 
+        ? `/superadmin/places/${editingPlace._id}`
+        : `/superadmin/places`;
+  
+      const method = editingPlace ? 'put' : 'post';
+  
       const response = await axiosInstance({
         method,
         url,
@@ -144,25 +148,23 @@ const Modal = ({setIsOpen, onUpdate, editingPlace}) => {
           Nearby: placeData.nearbyAttractions,
           best_time: placeData.bestTimeToVisit,
           short_summary: placeData.summary,
-          lattitude: latitude,
-          longitude: longitude,
+          lattitude: selectedLocation.latitude?.$numberDecimal || selectedLocation.latitude,
+          longitude: selectedLocation.longitude?.$numberDecimal || selectedLocation.longitude,
           image_urls: placeData.imageUrls
         }
       });
-
-      const data = response.data;
-      
-      if (response.ok) {
-        toast.success(editingPlace ? 'Place updated successfully' : 'Place added successfully');
-        setIsOpen(false);
-        if (onUpdate) onUpdate();
-      } else {
-        toast.error(data.message || 'Operation failed');
-      }
+  
+      toast.success(editingPlace ? 'Place updated successfully!' : 'Place added successfully!');
+      setIsOpen(false);
+      if (onUpdate) onUpdate(); // Refresh the parent list
     } catch (error) {
-      toast.error('Error saving place');
-      console.error('Error:', error);
+      toast.error(error.response?.data?.message || 'Operation failed');
     }
+  };
+  
+  const handleClose = () => {
+    handleClear();
+    setIsOpen(false);
   };
 
   return (
@@ -174,7 +176,7 @@ const Modal = ({setIsOpen, onUpdate, editingPlace}) => {
             <h2 className="text-lg font-medium">
               {editingPlace ? 'Edit Place' : 'Add New Place'}
             </h2>
-            <div onClick={()=>{setIsOpen(false)}}> 
+            <div onClick={handleClose}> 
               <X className='w-5 h-5 text-red-500 font-bold cursor-pointer' /> 
             </div>
           </div>
@@ -263,16 +265,29 @@ const Modal = ({setIsOpen, onUpdate, editingPlace}) => {
 
           <div className="mb-4">
             <label className="block text-gray-700 font-medium mb-2">Add Images</label>
-            <input type="file" multiple accept="image/*" onChange={handleImageUpload} />
+            <input 
+              type="file" 
+              multiple 
+              accept="image/*" 
+              onChange={handleImageUpload} 
+              className="border rounded-md px-3 py-2 w-full"
+            />
             {placeData.imageUrls.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-2">
                 {placeData.imageUrls.map((url, index) => (
-                  <img 
-                    key={index} 
-                    src={url} 
-                    alt={`Upload ${index + 1}`} 
-                    className="w-20 h-20 object-cover rounded"
-                  />
+                  <div key={index} className="relative">
+                    <img 
+                      src={url} 
+                      alt={`Upload ${index + 1}`} 
+                      className="w-20 h-20 object-cover rounded"
+                    />
+                    <button
+                      onClick={() => handleRemoveImage(index)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
+                    >
+                      ×
+                    </button>
+                  </div>
                 ))}
               </div>
             )}

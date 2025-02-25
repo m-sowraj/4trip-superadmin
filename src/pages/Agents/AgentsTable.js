@@ -141,13 +141,12 @@ const AgentsTable = () => {
     try {
       const response = await axiosInstance.put(`/commonauth/user/${id}`, updatedData);
 
-      if (!response.ok) throw new Error('Failed to update agent');
-      
+      // Remove response.ok check since axios throws on non-2xx responses
       toast.success('Agent updated successfully');
       fetchAgents();
       setEditModalOpen(false);
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
@@ -159,13 +158,11 @@ const AgentsTable = () => {
         is_deleted: true
       });
 
-      if (!response.ok) throw new Error('Failed to delete agent');
-      
+      // Remove response.ok check
       toast.success('Agent deleted successfully');
-      // Refresh the data
       fetchAgents();
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
@@ -175,13 +172,11 @@ const AgentsTable = () => {
         isActive: !currentStatus
       });
 
-      if (!response.ok) throw new Error('Failed to update agent status');
-      
+      // Remove response.ok check
       toast.success(`Agent ${currentStatus ? 'frozen' : 'unfrozen'} successfully`);
-      // Refresh the data
       fetchAgents();
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
@@ -190,10 +185,7 @@ const AgentsTable = () => {
     const [formData, setFormData] = useState({
       owner_name: agent?.owner_name || '',
       email: agent?.email || '',
-      phone_number: agent?.phone_number || '',
-      address: agent?.address || '',
-      city: agent?.city || '',
-      pincode: agent?.pincode || ''
+      phone_number: agent?.phone_number || ''
     });
 
     const handleChange = (e) => {
@@ -254,39 +246,6 @@ const AgentsTable = () => {
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Address</label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">City</label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleChange}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Pincode</label>
-                <input
-                  type="text"
-                  name="pincode"
-                  value={formData.pincode}
-                  onChange={handleChange}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-                />
-              </div>
             </div>
 
             <div className="mt-6 flex justify-end space-x-3">
@@ -311,8 +270,8 @@ const AgentsTable = () => {
   };
 
   return (
-    <div className="w-full h-[80%]   flex flex-col">
-      <div className="font-medium text-black text-xl p-4">Agents Management</div>
+    <div className="w-full h-[99%]   flex flex-col">
+      {/* <div className="font-medium text-black text-xl p-4">Agents Management</div> */}
 
       <div className="flex-1 bg-white rounded-lg shadow-md w-full flex flex-col overflow-hidden">
         {/* Search and Filters */}
@@ -430,6 +389,7 @@ const AgentsTable = () => {
             <thead className="bg-gray-100 sticky top-0 z-10">
               <tr>
                 <th className="p-4 text-left">Sr. No.</th>
+                <th className="p-4 text-left">Logo</th>
                 <th className="p-4 text-left">Agent Name</th>
                 <th className="p-4 text-left">Email</th>
                 <th className="p-4 text-left">Phone Number</th>
@@ -442,6 +402,19 @@ const AgentsTable = () => {
               {filteredAgents.map((agent, index) => (
               <tr key={agent._id} className={`border-t ${agent.is_deleted || agent.status === "Declined" ? 'bg-gray-50' : ''}`}>
                   <td className="p-4">{index + 1}</td>
+                  <td className="p-4">
+                    {agent.logo_url ? (
+                      <img 
+                        src={agent.logo_url} 
+                        alt={`${agent.owner_name} logo`}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                        <span className="text-gray-500 text-sm">{agent.owner_name.charAt(0)}</span>
+                      </div>
+                    )}
+                  </td>
                   <td className={`p-4 ${agent.is_deleted ? 'text-gray-400' : ''}`}>{agent.owner_name}</td>
                   <td className={`p-4 ${agent.is_deleted ? 'text-gray-400' : ''}`}>{agent.email}</td>
                   <td className={`p-4 ${agent.is_deleted ? 'text-gray-400' : ''}`}>{agent.phone_number}</td>

@@ -1,5 +1,5 @@
 import { Edit, SearchIcon, Trash, Eye, X, Check } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Add useEffect import
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
@@ -11,57 +11,96 @@ const ViewModal = ({ isOpen, onClose, partner }) => {
   if (!isOpen || !partner) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Partner Details</h2>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
-            <X className="w-5 h-5" />
-          </button>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl transform transition-all">
+        <div className="flex gap-6">
+          {/* Logo Section - Left Side */}
+          <div className="flex-shrink-0">
+            {partner.logo_url ? (
+              <div className="relative w-40 h-40">
+                <img 
+                  src={partner.logo_url} 
+                  alt={`${partner.business_name} logo`}
+                  className="w-full h-full rounded-2xl object-cover border-2 border-gray-100 shadow-md"
+                />
+                <div className="absolute inset-0 rounded-2xl ring-1 ring-black/5"></div>
+              </div>
+            ) : (
+              <div className="w-40 h-40 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center border-2 border-gray-100 shadow-md">
+                <span className="text-5xl font-semibold text-gray-400">
+                  {partner.business_name?.charAt(0) || partner.owner_name?.charAt(0)}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Header and Content - Right Side */}
+          <div className="flex-1">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">{partner.business_name || partner.owner_name}</h2>
+                <p className="text-gray-500 mt-1">{partner.email}</p>
+              </div>
+              <button 
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
+              >
+                <X className="w-6 h-6 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div className="border-b mb-6"></div>
+          </div>
         </div>
-        
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="font-medium text-gray-700">Business Name</label>
-              <p>{partner.business_name}</p>
-            </div>
-            <div>
-              <label className="font-medium text-gray-700">Owner Name</label>
-              <p>{partner.owner_name}</p>
-            </div>
-            <div>
-              <label className="font-medium text-gray-700">Email</label>
-              <p>{partner.email}</p>
-            </div>
-            <div>
-              <label className="font-medium text-gray-700">Phone Number</label>
-              <p>{partner.phone_number}</p>
-            </div>
-            <div>
-              <label className="font-medium text-gray-700">Category</label>
-              <p>{partner.select_category}</p>
-            </div>
-            <div>
-              <label className="font-medium text-gray-700">Shop Type</label>
-              <p>{partner.shopType || 'N/A'}</p>
-            </div>
-            <div>
-              <label className="font-medium text-gray-700">Address</label>
-              <p>{partner.address}</p>
-            </div>
-            <div>
-              <label className="font-medium text-gray-700">City</label>
-              <p>{partner.city}</p>
-            </div>
-            <div>
-              <label className="font-medium text-gray-700">Pincode</label>
-              <p>{partner.pincode}</p>
+
+        {/* Content */}
+        <div className="space-y-6 mt-6">
+          {/* Your existing content sections with updated styling */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Business Details</h3>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+              <div>
+                <label className="font-medium text-gray-700">Business Name</label>
+                <p>{partner.business_name}</p>
+              </div>
+              <div>
+                <label className="font-medium text-gray-700">Owner Name</label>
+                <p>{partner.owner_name}</p>
+              </div>
+              <div>
+                <label className="font-medium text-gray-700">Email</label>
+                <p>{partner.email}</p>
+              </div>
+              <div>
+                <label className="font-medium text-gray-700">Phone Number</label>
+                <p>{partner.phone_number}</p>
+              </div>
+              <div>
+                <label className="font-medium text-gray-700">Category</label>
+                <p>{partner.select_category}</p>
+              </div>
+              <div>
+                <label className="font-medium text-gray-700">Shop Type</label>
+                <p>{partner.shopType || 'N/A'}</p>
+              </div>
+              <div>
+                <label className="font-medium text-gray-700">Address</label>
+                <p>{partner.address}</p>
+              </div>
+              <div>
+                <label className="font-medium text-gray-700">City</label>
+                <p>{partner.city}</p>
+              </div>
+              <div>
+                <label className="font-medium text-gray-700">Pincode</label>
+                <p>{partner.pincode}</p>
+              </div>
             </div>
           </div>
 
-          <div>
-            <label className="font-medium text-gray-700">Business Hours</label>
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Business Hours</h3>
             <div className="mt-1">
               <p>Days: {partner.businessHours?.days?.join(', ') || 'N/A'}</p>
               <p>Opening Time: {partner.businessHours?.openingTime || 'N/A'}</p>
@@ -69,12 +108,24 @@ const ViewModal = ({ isOpen, onClose, partner }) => {
             </div>
           </div>
         </div>
+
+        {/* Footer */}
+        <div className="mt-8 border-t pt-4 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
 const PartnersTableReview = ({ Partners, onUpdate }) => {
+  // Add refresh state
+  const [refreshKey, setRefreshKey] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -148,22 +199,32 @@ const PartnersTableReview = ({ Partners, onUpdate }) => {
     doc.save("Partners_Data.pdf");
   };
 
-  // Add accept/decline handlers
+  // Add useEffect for refresh
+  useEffect(() => {
+    if (refreshKey > 0) {
+      onUpdate();
+    }
+  }, [refreshKey, onUpdate]);
+
+  // Update accept handler
   const handleAccept = async (id) => {
     try {
       const response = await axios.put(`/commonauth/user/${id}`, {
-        isNew: false
+        isNew: false,
+        isActive: true,
+        status: "Active"
       });
 
       if (response.status !== 200) throw new Error('Failed to accept partner');
       
       toast.success('Partner accepted successfully');
-      onUpdate();
+      setRefreshKey(prev => prev + 1); // Trigger refresh
     } catch (error) {
       toast.error(error.message);
     }
   };
 
+  // Update decline handler
   const handleDecline = async (id) => {
     try {
       const response = await axios.put(`/commonauth/user/${id}`, {
@@ -175,7 +236,7 @@ const PartnersTableReview = ({ Partners, onUpdate }) => {
       if (response.status !== 200) throw new Error('Failed to decline partner');
       
       toast.success('Partner declined successfully');
-      onUpdate();
+      setRefreshKey(prev => prev + 1); // Trigger refresh
     } catch (error) {
       toast.error(error.message);
     }
@@ -192,7 +253,7 @@ const PartnersTableReview = ({ Partners, onUpdate }) => {
   });
 
   return (
-    <div className="w-full h-[90%] flex flex-col">
+    <div className="w-full h-[100%] flex flex-col">
       <div className="flex-1 bg-white rounded-lg shadow-md w-full flex flex-col overflow-hidden">
         {/* Search and Filters */}
         <div className="p-4">
@@ -306,6 +367,7 @@ const PartnersTableReview = ({ Partners, onUpdate }) => {
               <thead className="bg-gray-100 sticky top-0 z-10">
                 <tr>
                   <th className="p-4 text-left">Sr. No.</th>
+                  <th className="p-4 text-left">Logo</th>
                   <th className="p-4 text-left">Partner Name</th>
                   <th className="p-4 text-left">Category</th>
                   <th className="p-4 text-left">Phone Number</th>
@@ -318,6 +380,19 @@ const PartnersTableReview = ({ Partners, onUpdate }) => {
                 {filteredPartners.map((partner, index) => (
                   <tr key={partner._id} className="border-t">
                     <td className="p-4">{index + 1}</td>
+                    <td className="p-4">
+                      {partner.logo_url ? (
+                        <img 
+                          src={partner.logo_url} 
+                          alt={`${partner.owner_name} logo`}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-500 text-sm">{partner.owner_name.charAt(0)}</span>
+                        </div>
+                      )}
+                    </td>
                     <td className="p-4">{partner.owner_name}</td>
                     <td className="p-4">{partner.select_category}</td>
                     <td className="p-4">{partner.phone_number}</td>

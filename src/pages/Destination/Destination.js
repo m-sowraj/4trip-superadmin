@@ -1,4 +1,4 @@
-import { Edit, SearchIcon, Trash } from "lucide-react";
+import { Edit, SearchIcon, Trash, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -10,10 +10,12 @@ import axiosInstance from "../../utils/axios";
 const Destination = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("Active");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingPlace, setEditingPlace] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [previewImages, setPreviewImages] = useState([]);
 
   const [Destination, setDestination] = useState([]);
 
@@ -34,19 +36,6 @@ const Destination = () => {
 
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
-  };
-
-  const getStatusClass = (status) => {
-    switch (status) {
-      case "Active":
-        return "text-green-500";
-      case "Inactive":
-        return "text-yellow-500";
-      case "Freezed":
-        return "text-red-500";
-      default:
-        return "";
-    }
   };
 
   // Download as Excel
@@ -99,34 +88,31 @@ const Destination = () => {
 
   // Filter logic
   const filteredDestination = Destination.filter((Partner) => {
-    const matchesSearch = Partner.place_name
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase()); // Change name to place
-    // const matchesDate = dateFilter ? Partner.date === dateFilter : true;
-    // const matchesStatus = statusFilter
-    //   ? Partner.status === statusFilter
-    //   : true;
-    return matchesSearch
+    return Partner.place_name.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  // Handle status toggle in the table
-  const toggleStatus = (id) => {
-    // Toggle the status for the given id
-    const updatedDestination = Destination.map((dest) =>
-      dest.id === id
-        ? { ...dest, status: dest.status === "Active" ? "Inactive" : "Active" }
-        : dest
-    );
-    // Set the updated destination array to state (if needed)
+  const handleViewImage = (place) => {
+    if (place.image_urls && place.image_urls.length > 0) {
+      setPreviewImages(place.image_urls);
+      setCurrentImageIndex(0);
+      setImagePreview(true);
+    } else {
+      toast.info('No images available');
+    }
   };
 
-  const handleViewImage = (place) => {
-    // If you have an image URL, you can open it in a new window
-    if (place.image) {
-      window.open(place.image, '_blank');
-    } else {
-      toast.info('No image available');
-    }
+  const handleNextImage = (e) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => 
+      prev === previewImages.length - 1 ? 0 : prev + 1
+    );
+  };
+
+  const handlePrevImage = (e) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => 
+      prev === 0 ? previewImages.length - 1 : prev - 1
+    );
   };
 
   const handleEdit = (place) => {
@@ -149,16 +135,11 @@ const Destination = () => {
     if (!window.confirm('Are you sure you want to delete this place?')) return;
 
     try {
-      const response = await axiosInstance.put(`/superadmin/places/${id}`, {
-        delete: true
-      });
-
-      if (!response.ok) throw new Error('Failed to delete place');
-      
+      await axiosInstance.delete(`/superadmin/places/${id}`);
       toast.success('Place deleted successfully');
-      fetchDestinations();
+      await fetchDestinations(); // Refresh the list
     } catch (error) {
-      toast.error(error.message);
+      toast.error('Failed to delete place');
     }
   };
 
@@ -178,6 +159,56 @@ const Destination = () => {
         />
       )}
       
+      {imagePreview && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
+          onClick={() => {
+            setImagePreview(null);
+            setPreviewImages([]);
+            setCurrentImageIndex(0);
+          }}
+        >
+          <div className="relative max-w-4xl max-h-[90vh]">
+            <img 
+              src={previewImages[currentImageIndex]} 
+              alt={`Preview ${currentImageIndex + 1}`} 
+              className="max-w-full max-h-[90vh] object-contain"
+            />
+            
+            {previewImages.length > 1 && (
+              <>
+                <button 
+                  className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 p-2 rounded-full"
+                  onClick={handlePrevImage}
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button 
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 p-2 rounded-full"
+                  onClick={handleNextImage}
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/50 px-3 py-1 rounded-full text-white">
+                  {currentImageIndex + 1} / {previewImages.length}
+                </div>
+              </>
+            )}
+            
+            <button 
+              className="absolute top-2 right-2 bg-white rounded-full p-1"
+              onClick={() => {
+                setImagePreview(null);
+                setPreviewImages([]);
+                setCurrentImageIndex(0);
+              }}
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between w-full mb-4">
         <div className="font-medium text-black text-xl">Place to Visit</div>
         <div
@@ -205,17 +236,6 @@ const Destination = () => {
             </div>
 
             <div className="flex gap-6">
-              {/* Status Filter */}
-              <select
-                className="border border-gray-300 rounded-lg p-2"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="">Filter by Status</option>
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-              </select>
-
               {/* Download Button */}
               <div className="relative inline-block">
                 <button
@@ -271,14 +291,13 @@ const Destination = () => {
                   <th className="p-4 text-left">Sr. No.</th>
                   <th className="p-4 text-left">Place Name</th>
                   <th className="p-4 text-left">Location</th>
-                  <th className="p-4 text-left">Status</th>
                   <th className="p-4 text-left">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {Destination.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="text-center py-4">Loading...</td>
+                    <td colSpan="4" className="text-center py-4">Loading...</td>
                   </tr>
                 ) : (
                   filteredDestination.map((place, index) => (
@@ -286,9 +305,6 @@ const Destination = () => {
                       <td className="p-4">{index + 1}</td>
                       <td className="p-4">{place.place_name}</td>
                       <td className="p-4">{place.location}</td>
-                      <td className={`p-4 ${getStatusClass(place.status)}`}>
-                        {place.status}
-                      </td>
                       <td className="p-4 flex items-center space-x-2">
                         <button 
                           className="p-2 bg-blue-100 rounded-md hover:bg-blue-200"
