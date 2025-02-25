@@ -1,5 +1,5 @@
 import React from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom' // Add useLocation import
 import Sidebar from '../components/SideBar'
 import Header from '../components/Header'
 import AgentsTable from './Agents/AgentsTable';
@@ -15,6 +15,17 @@ import ViewLocation from './Locations/ViewLocation';
 import ListLocations from './Locations/ListLocations';
 
 function DashBoard() {
+    const location = useLocation(); // Add this import from 'react-router-dom'
+    
+    // Don't show Header and Sidebar on login page
+    if (location.pathname === '/login') {
+        return (
+            <Routes>
+                <Route path="/login" element={<LoginForm />} />
+            </Routes>
+        );
+    }
+
     return (
     <div className="flex flex-col min-h-screen max-h-screen">
       <Header /> 

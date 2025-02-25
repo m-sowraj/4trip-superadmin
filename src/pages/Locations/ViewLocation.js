@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { API_BASE_URL } from '../../utils/config';
+import axios from '../../utils/axios';
 
 const ViewLocation = () => {
   const { id } = useParams();
@@ -13,12 +13,8 @@ const ViewLocation = () => {
   useEffect(() => {
     const fetchLocation = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/locations/${id}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch location details.');
-        }
-        const data = await response.json();
-        setLocation(data);
+        const response = await axios.get(`/locations/${id}`);
+        setLocation(response.data);
       } catch (error) {
         toast.error(error.message);
       } finally {
@@ -64,4 +60,4 @@ const ViewLocation = () => {
   );
 };
 
-export default ViewLocation; 
+export default ViewLocation;

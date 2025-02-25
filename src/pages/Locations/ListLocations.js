@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SearchIcon, Eye, Edit, Trash } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { API_BASE_URL } from '../../utils/config';
+import axios from '../../utils/axios';
 import Modal from '../../components/Modal';
 
 const ListLocations = () => {
@@ -32,12 +32,8 @@ const ListLocations = () => {
 
   const fetchLocations = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/locations`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch locations.');
-      }
-      const data = await response.json();
-      setLocations(data);
+      const response = await axios.get('/locations');
+      setLocations(response.data);
     } catch (error) {
       toast.error(error.message);
     }
@@ -75,17 +71,10 @@ const ListLocations = () => {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/locations`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await axios.post('/locations', formData);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create location.');
+      if (response.status !== 201) {
+        throw new Error(response.data.message || 'Failed to create location.');
       }
 
       toast.success('Location created successfully!');
@@ -105,17 +94,10 @@ const ListLocations = () => {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/locations/${selectedLocation._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await axios.put(`/locations/${selectedLocation._id}`, formData);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update location.');
+      if (response.status !== 200) {
+        throw new Error(response.data.message || 'Failed to update location.');
       }
 
       toast.success('Location updated successfully!');
@@ -131,13 +113,10 @@ const ListLocations = () => {
   const handleDelete = async () => {
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/locations/${selectedLocation._id}`, {
-        method: 'DELETE',
-      });
+      const response = await axios.delete(`/locations/${selectedLocation._id}`);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to delete location.');
+      if (response.status !== 200) {
+        throw new Error(response.data.message || 'Failed to delete location.');
       }
 
       toast.success('Location deleted successfully!');
@@ -456,4 +435,4 @@ const ListLocations = () => {
   );
 };
 
-export default ListLocations; 
+export default ListLocations;

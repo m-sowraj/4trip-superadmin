@@ -2,6 +2,7 @@ import { Pencil } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { API_BASE_URL } from '../../utils/config';
+import axiosInstance from "../../utils/axios";
 
 const AddItemForm = () => {
   const [selectedLocation, setSelectedLocation] = useState('');
@@ -20,10 +21,8 @@ const AddItemForm = () => {
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/locations`);
-        if (!response.ok) throw new Error('Failed to fetch locations');
-        const data = await response.json();
-        setLocations(data);
+        const response = await axiosInstance.get("/locations");
+        setLocations(response.data);
       } catch (error) {
         toast.error(error.message);
       }
@@ -60,13 +59,9 @@ const AddItemForm = () => {
     try {
       // Submit each selected item for the location
       await Promise.all(selectedItems.map(item => 
-        fetch(`${API_BASE_URL}/superadmin/thingstocarry`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: item,
-            location_id: selectedLocation
-          }),
+        axiosInstance.post("/superadmin/thingstocarry", {
+          name: item,
+          location_id: selectedLocation
         })
       ));
 

@@ -2,6 +2,7 @@ import { X } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import { API_BASE_URL } from '../../utils/config';
+import axiosInstance from "../../utils/axios";
 
 const Modal = ({setIsOpen, onUpdate, editingPlace}) => {
   const [placeData, setPlaceData] = useState({
@@ -10,6 +11,7 @@ const Modal = ({setIsOpen, onUpdate, editingPlace}) => {
     nearbyAttractions: editingPlace?.Nearby || '',
     bestTimeToVisit: editingPlace?.best_time || '',
     summary: editingPlace?.short_summary || '',
+    imageUrls: editingPlace?.image_urls || [],
     images: [],
     videos: [],
   });
@@ -22,10 +24,8 @@ const Modal = ({setIsOpen, onUpdate, editingPlace}) => {
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/locations`);
-        if (!response.ok) throw new Error('Failed to fetch locations');
-        const data = await response.json();
-        setLocations(data);
+        const response = await axiosInstance.get("/locations");
+        setLocations(response.data);
       } catch (error) {
         toast.error('Error loading locations');
         console.error('Error:', error);
@@ -62,8 +62,42 @@ const Modal = ({setIsOpen, onUpdate, editingPlace}) => {
     }
   };
 
-  const handleImageUpload = (e) => {
-    setPlaceData({ ...placeData, images: [...placeData.images, e.target.files[0]] });
+  const uploadFile = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await axiosInstance.post('/upload/single', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data.fileUrl;
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error('Error uploading file');
+      return null;
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    const uploadPromises = files.map(uploadFile);
+
+    try {
+      const urls = await Promise.all(uploadPromises);
+      const validUrls = urls.filter(url => url !== null);
+      
+      setPlaceData(prev => ({
+        ...prev,
+        imageUrls: [...prev.imageUrls, ...validUrls]
+      }));
+      
+      toast.success(`${validUrls.length} images uploaded successfully`);
+    } catch (error) {
+      console.error('Error handling image uploads:', error);
+      toast.error('Error uploading images');
+    }
   };
 
   const handleVideoUpload = (e) => {
@@ -77,6 +111,7 @@ const Modal = ({setIsOpen, onUpdate, editingPlace}) => {
       nearbyAttractions: '',
       bestTimeToVisit: '',
       summary: '',
+      imageUrls: [],
       images: [],
       videos: [],
     });
@@ -93,29 +128,28 @@ const Modal = ({setIsOpen, onUpdate, editingPlace}) => {
     const longitude = selectedLocation.longitude?.$numberDecimal || selectedLocation.longitude;
 
     const url = editingPlace 
-      ? `${API_BASE_URL}/superadmin/places/${editingPlace._id}`
-      : `${API_BASE_URL}/superadmin/places`;
+      ? `/superadmin/places/${editingPlace._id}`
+      : `/superadmin/places`;
 
     const method = editingPlace ? 'PUT' : 'POST';
 
     try {
-      const response = await fetch(url, {
+      const response = await axiosInstance({
         method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+        url,
+        data: {
           place_name: placeData.name,
           Location: selectedLocation.name,
           Nearby: placeData.nearbyAttractions,
           best_time: placeData.bestTimeToVisit,
           short_summary: placeData.summary,
           lattitude: latitude,
-          longitude: longitude
-        }),
+          longitude: longitude,
+          image_urls: placeData.imageUrls
+        }
       });
 
-      const data = await response.json();
+      const data = response.data;
       
       if (response.ok) {
         toast.success(editingPlace ? 'Place updated successfully' : 'Place added successfully');
@@ -228,7 +262,19 @@ const Modal = ({setIsOpen, onUpdate, editingPlace}) => {
 
           <div className="mb-4">
             <label className="block text-gray-700 font-medium mb-2">Add Images</label>
-            <input type="file" multiple onChange={handleImageUpload} />
+            <input type="file" multiple accept="image/*" onChange={handleImageUpload} />
+            {placeData.imageUrls.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {placeData.imageUrls.map((url, index) => (
+                  <img 
+                    key={index} 
+                    src={url} 
+                    alt={`Upload ${index + 1}`} 
+                    className="w-20 h-20 object-cover rounded"
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="mb-4">

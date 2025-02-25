@@ -5,6 +5,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import Modal from "./AddDestinaton";
 import { toast } from "react-toastify";
+import axiosInstance from "../../utils/axios";
 
 const Destination = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -18,9 +19,8 @@ const Destination = () => {
 
   const fetchDestinations = async () => {
     try {
-      const response = await fetch("https://fourtrip-server.onrender.com/api/superadmin/allplaces");
-      const data = await response.json();
-      setDestination(data.data);
+      const response = await axiosInstance.get("/superadmin/allplaces");
+      setDestination(response.data.data);
     } catch (error) {
       toast.error("Error fetching destinations");
     }
@@ -149,14 +149,8 @@ const Destination = () => {
     if (!window.confirm('Are you sure you want to delete this place?')) return;
 
     try {
-      const response = await fetch(`https://fourtrip-server.onrender.com/api/superadmin/places/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          delete: true
-        }),
+      const response = await axiosInstance.put(`/superadmin/places/${id}`, {
+        delete: true
       });
 
       if (!response.ok) throw new Error('Failed to delete place');

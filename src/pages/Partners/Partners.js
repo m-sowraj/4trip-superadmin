@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { toast } from "react-toastify";
+import axios from '../../utils/axios';
 
 const PartnersTable = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -17,9 +18,8 @@ const PartnersTable = () => {
 
   const fetchPartners = async () => {
     try {
-      const response = await fetch("https://fourtrip-server.onrender.com/api/commonauth/users?type=partner&is_new=false");
-      const data = await response.json();
-      setPartners(data.data);
+      const response = await axios.get("/commonauth/users?type=partner&is_new=false");
+      setPartners(response.data.data);
     } catch (error) {
       toast.error(error.message);
     }
@@ -31,15 +31,9 @@ const PartnersTable = () => {
 
   const handleEdit = async (id, updatedData) => {
     try {
-      const response = await fetch(`https://fourtrip-server.onrender.com/api/commonauth/user/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedData),
-      });
+      const response = await axios.put(`/commonauth/user/${id}`, updatedData);
 
-      if (!response.ok) throw new Error('Failed to update partner');
+      if (response.status !== 200) throw new Error('Failed to update partner');
       
       toast.success('Partner updated successfully');
       fetchPartners();
@@ -53,17 +47,11 @@ const PartnersTable = () => {
     if (!window.confirm('Are you sure you want to delete this partner?')) return;
 
     try {
-      const response = await fetch(`https://fourtrip-server.onrender.com/api/commonauth/user/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          is_deleted: true
-        }),
+      const response = await axios.put(`/commonauth/user/${id}`, {
+        is_deleted: true
       });
 
-      if (!response.ok) throw new Error('Failed to delete partner');
+      if (response.status !== 200) throw new Error('Failed to delete partner');
       
       toast.success('Partner deleted successfully');
       fetchPartners();
@@ -74,17 +62,11 @@ const PartnersTable = () => {
 
   const handleFreeze = async (id, currentStatus) => {
     try {
-      const response = await fetch(`https://fourtrip-server.onrender.com/api/commonauth/user/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          isActive: !currentStatus
-        }),
+      const response = await axios.put(`/commonauth/user/${id}`, {
+        isActive: !currentStatus
       });
 
-      if (!response.ok) throw new Error('Failed to update partner status');
+      if (response.status !== 200) throw new Error('Failed to update partner status');
       
       toast.success(`Partner ${currentStatus ? 'frozen' : 'unfrozen'} successfully`);
       fetchPartners();
@@ -371,7 +353,7 @@ const PartnersTable = () => {
                   Download
                 </button>
                 {dropdownOpen && (
-                  <div className="absolute bg-white border border-gray-300 shadow-lg rounded-lg mt-2 w-40">
+                  <div className="absolute bg-white border border-gray-300 shadow-lg rounded-lg mt-2 w-40 z-50">
                     <ul className="py-2">
                       <li
                         className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
