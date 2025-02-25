@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import { API_BASE_URL } from '../../utils/config';
 import axiosInstance from "../../utils/axios";
+import axiosInstance from "../../utils/axios";
 
 const Modal = ({setIsOpen, onUpdate, editingPlace}) => {
   const [placeData, setPlaceData] = useState({
