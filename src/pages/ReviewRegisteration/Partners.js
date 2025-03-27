@@ -1,10 +1,10 @@
 import { Edit, SearchIcon, Trash, Eye, X, Check } from "lucide-react";
-import { useState, useEffect } from "react"; // Add useEffect import
+import { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { toast } from "react-toastify";
-import axios from '../../utils/axios';
+import axios from "../../utils/axios";
 
 // Add ViewModal component
 const ViewModal = ({ isOpen, onClose, partner }) => {
@@ -18,8 +18,8 @@ const ViewModal = ({ isOpen, onClose, partner }) => {
           <div className="flex-shrink-0">
             {partner.logo_url ? (
               <div className="relative w-40 h-40">
-                <img 
-                  src={partner.logo_url} 
+                <img
+                  src={partner.logo_url}
                   alt={`${partner.business_name} logo`}
                   className="w-full h-full rounded-2xl object-cover border-2 border-gray-100 shadow-md"
                 />
@@ -28,7 +28,8 @@ const ViewModal = ({ isOpen, onClose, partner }) => {
             ) : (
               <div className="w-40 h-40 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center border-2 border-gray-100 shadow-md">
                 <span className="text-5xl font-semibold text-gray-400">
-                  {partner.business_name?.charAt(0) || partner.owner_name?.charAt(0)}
+                  {partner.business_name?.charAt(0) ||
+                    partner.owner_name?.charAt(0)}
                 </span>
               </div>
             )}
@@ -38,10 +39,12 @@ const ViewModal = ({ isOpen, onClose, partner }) => {
           <div className="flex-1">
             <div className="flex justify-between items-start mb-6">
               <div>
-                <h2 className="text-2xl font-bold text-gray-800">{partner.business_name || partner.owner_name}</h2>
+                <h2 className="text-2xl font-bold text-gray-800">
+                  {partner.business_name || partner.owner_name}
+                </h2>
                 <p className="text-gray-500 mt-1">{partner.email}</p>
               </div>
-              <button 
+              <button
                 onClick={onClose}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
               >
@@ -56,12 +59,16 @@ const ViewModal = ({ isOpen, onClose, partner }) => {
 
         {/* Content */}
         <div className="space-y-6 mt-6">
-          {/* Your existing content sections with updated styling */}
+          {/* Business Details Section */}
           <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Business Details</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              Business Details
+            </h3>
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               <div>
-                <label className="font-medium text-gray-700">Business Name</label>
+                <label className="font-medium text-gray-700">
+                  Business Name
+                </label>
                 <p>{partner.business_name}</p>
               </div>
               <div>
@@ -73,16 +80,18 @@ const ViewModal = ({ isOpen, onClose, partner }) => {
                 <p>{partner.email}</p>
               </div>
               <div>
-                <label className="font-medium text-gray-700">Phone Number</label>
+                <label className="font-medium text-gray-700">
+                  Phone Number
+                </label>
                 <p>{partner.phone_number}</p>
               </div>
               <div>
                 <label className="font-medium text-gray-700">Category</label>
-                <p>{partner.select_category}</p>
+                <p>{partner.role}</p>
               </div>
               <div>
                 <label className="font-medium text-gray-700">Shop Type</label>
-                <p>{partner.shopType || 'N/A'}</p>
+                <p>{partner.role || "N/A"}</p>
               </div>
               <div>
                 <label className="font-medium text-gray-700">Address</label>
@@ -99,12 +108,15 @@ const ViewModal = ({ isOpen, onClose, partner }) => {
             </div>
           </div>
 
+          {/* Business Hours Section */}
           <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Business Hours</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              Business Hours
+            </h3>
             <div className="mt-1">
-              <p>Days: {partner.businessHours?.days?.join(', ') || 'N/A'}</p>
-              <p>Opening Time: {partner.businessHours?.openingTime || 'N/A'}</p>
-              <p>Closing Time: {partner.businessHours?.closingTime || 'N/A'}</p>
+              <p>Days: {partner.businessHours?.days?.join(", ") || "N/A"}</p>
+              <p>Opening Time: {partner.businessHours?.openingTime || "N/A"}</p>
+              <p>Closing Time: {partner.businessHours?.closingTime || "N/A"}</p>
             </div>
           </div>
         </div>
@@ -124,8 +136,7 @@ const ViewModal = ({ isOpen, onClose, partner }) => {
 };
 
 const PartnersTableReview = ({ Partners, onUpdate }) => {
-  // Add refresh state
-  const [refreshKey, setRefreshKey] = useState(0);
+  // const [refreshKey, setRefreshKey] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -153,10 +164,10 @@ const PartnersTableReview = ({ Partners, onUpdate }) => {
 
   // Download as Excel
   const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(Partners); // Convert JSON to worksheet
-    const workbook = XLSX.utils.book_new(); // Create a new workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Partners"); // Add the worksheet
-    XLSX.writeFile(workbook, "Partners_Data.xlsx"); // Download the file
+    const worksheet = XLSX.utils.json_to_sheet(Partners);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Partners");
+    XLSX.writeFile(workbook, "Partners_Data.xlsx");
   };
 
   // Download as CSV
@@ -183,13 +194,13 @@ const PartnersTableReview = ({ Partners, onUpdate }) => {
       "Registration Date",
       "Status",
     ];
-    const tableRows = Partners.map((Partner, index) => [
+    const tableRows = Partners.map((partner, index) => [
       index + 1,
-      Partner.owner_name,
-      Partner.email,
-      Partner.phone_number,
-      Partner.location,
-      Partner.status,
+      partner.owner_name,
+      partner.email,
+      partner.phone_number,
+      partner.createdAt.split("T")[0],
+      partner.status,
     ]);
     doc.autoTable({
       head: [tableColumn],
@@ -199,55 +210,50 @@ const PartnersTableReview = ({ Partners, onUpdate }) => {
     doc.save("Partners_Data.pdf");
   };
 
-  // Add useEffect for refresh
-  useEffect(() => {
-    if (refreshKey > 0) {
-      onUpdate();
-    }
-  }, [refreshKey, onUpdate]);
-
-  // Update accept handler
   const handleAccept = async (id) => {
     try {
-      const response = await axios.put(`/commonauth/user/${id}`, {
-        isNew: false,
-        isActive: true,
-        status: "Active"
+      console.log(id);
+      const response = await axios.post("/superadmin/review", {
+        id: id,
+        isapproved: true,
       });
 
-      if (response.status !== 200) throw new Error('Failed to accept partner');
-      
-      toast.success('Partner accepted successfully');
-      setRefreshKey(prev => prev + 1); // Trigger refresh
+      if (response.status !== 200) throw new Error("Failed to accept agent");
+
+      toast.success("Agent accepted successfully");
+      // setRefreshKey((prev) => prev + 1);
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (error) {
       toast.error(error.message);
     }
   };
 
-  // Update decline handler
   const handleDecline = async (id) => {
     try {
-      const response = await axios.put(`/commonauth/user/${id}`, {
-        isActive: false,
-        status: "Declined",
-        isNew: false
+      const response = await axios.post("/superadmin/review", {
+        id: id,
+        isapproved: false,
       });
+      console.log("Decline response: ", response);
+      if (response.status !== 200) throw new Error("Failed to decline agent");
 
-      if (response.status !== 200) throw new Error('Failed to decline partner');
-      
-      toast.success('Partner declined successfully');
-      setRefreshKey(prev => prev + 1); // Trigger refresh
+      toast.success("Agent declined successfully");
     } catch (error) {
       toast.error(error.message);
     }
   };
 
-  // Filter logic
   const filteredPartners = Partners.filter((partner) => {
-    const matchesSearch = partner.owner_name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDate = startDate && endDate ? 
-      partner.createdAt.split("T")[0] >= startDate && 
-      partner.createdAt.split("T")[0] <= endDate : true;
+    const matchesSearch = partner.owner_name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesDate =
+      startDate && endDate
+        ? partner.createdAt.split("T")[0] >= startDate &&
+          partner.createdAt.split("T")[0] <= endDate
+        : true;
     const matchesStatus = statusFilter ? partner.status === statusFilter : true;
     return matchesSearch && matchesDate && matchesStatus;
   });
@@ -382,24 +388,28 @@ const PartnersTableReview = ({ Partners, onUpdate }) => {
                     <td className="p-4">{index + 1}</td>
                     <td className="p-4">
                       {partner.logo_url ? (
-                        <img 
-                          src={partner.logo_url} 
+                        <img
+                          src={partner.logo_url}
                           alt={`${partner.owner_name} logo`}
                           className="w-10 h-10 rounded-full object-cover"
                         />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-gray-500 text-sm">{partner.owner_name.charAt(0)}</span>
+                          <span className="text-gray-500 text-sm">
+                            {partner.owner_name.charAt(0)}
+                          </span>
                         </div>
                       )}
                     </td>
                     <td className="p-4">{partner.owner_name}</td>
-                    <td className="p-4">{partner.select_category}</td>
+                    <td className="p-4">{partner.role}</td>
                     <td className="p-4">{partner.phone_number}</td>
                     <td className="p-4">{partner.address}</td>
-                    <td className="p-4">{partner.status}</td>
+                    <td className={`p-4 ${getStatusClass(partner.status)}`}>
+                      {partner.status}
+                    </td>
                     <td className="p-4 flex items-center space-x-2">
-                      <button 
+                      <button
                         className="p-2 bg-blue-100 rounded-md hover:bg-blue-200"
                         onClick={() => {
                           setSelectedPartner(partner);
@@ -408,13 +418,13 @@ const PartnersTableReview = ({ Partners, onUpdate }) => {
                       >
                         <Eye className="w-4 h-4 text-blue-500" />
                       </button>
-                      <button 
+                      <button
                         className="p-2 bg-green-100 rounded-md hover:bg-green-200"
                         onClick={() => handleAccept(partner._id)}
                       >
                         <Check className="w-4 h-4 text-green-500" />
                       </button>
-                      <button 
+                      <button
                         className="p-2 bg-red-100 rounded-md hover:bg-red-200"
                         onClick={() => handleDecline(partner._id)}
                       >

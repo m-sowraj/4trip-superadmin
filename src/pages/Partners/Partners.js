@@ -4,7 +4,7 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { toast } from "react-toastify";
-import axios from '../../utils/axios';
+import axios from "../../utils/axios";
 
 const PartnersTable = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -18,7 +18,8 @@ const PartnersTable = () => {
 
   const fetchPartners = async () => {
     try {
-      const response = await axios.get("/commonauth/users?type=partner&is_new=false");
+      const response = await axios.get("/auth?role=Partner&isNew=false");
+      console.log("The response : ", response.data.data);
       setPartners(response.data.data);
     } catch (error) {
       toast.error(error.message);
@@ -31,9 +32,9 @@ const PartnersTable = () => {
 
   const handleEdit = async (id, updatedData) => {
     try {
-      const response = await axios.put(`/commonauth/user/${id}`, updatedData);
+      const response = await axios.put(`/auth/${id}/`, updatedData);
 
-      toast.success('Partner updated successfully');
+      toast.success("Partner updated successfully");
       fetchPartners();
       setEditModalOpen(false);
     } catch (error) {
@@ -42,35 +43,50 @@ const PartnersTable = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this partner?')) return;
+    if (!window.confirm("Are you sure you want to delete this partner?"))
+      return;
 
     try {
-      const response = await axios.put(`/commonauth/user/${id}`, {
-        is_deleted: true
+      const response = await axios.delete(`/auth/${id}`, {
+        is_deleted: true,
       });
 
-      toast.success('Partner deleted successfully');
+      toast.success("Partner deleted successfully");
       fetchPartners();
     } catch (error) {
       toast.error(error.response?.data?.message || error.message);
     }
   };
 
-  const handleFreeze = async (id, currentStatus) => {
+  const handleFreeze = async (id, is_deleted) => {
     try {
-      const response = await axios.put(`/commonauth/user/${id}`, {
-        isActive: !currentStatus
+      await axios.put(`/auth/${id}`, {
+        is_deleted: !is_deleted,
       });
 
-      toast.success(`Partner ${currentStatus ? 'frozen' : 'unfrozen'} successfully`);
+      toast.success(
+        `Partner ${is_deleted ? "Unfrozen" : "Frozen"} successfully`
+      );
       fetchPartners();
     } catch (error) {
       toast.error(error.response?.data?.message || error.message);
     }
   };
+  // const handleFreeze = async (id, is_deleted) => {
+  //   try {
+  //     await axiosInstance.put(`/auth/${id}`, {
+  //       is_deleted: !is_deleted,
+  //     });
+  //     toast.success(
+  //   `Partner ${currentStatus ? "frozen" : "unfrozen"} successfully`
+  // );
+  // fetchPartners();
+  //   } catch (error) {
+  //     toast.error(error.response?.data?.message || error.message);
+  //   }
+  // };
 
-  const getStatusClass = (status, isDeleted) => {
-    if (isDeleted) return "text-gray-400 line-through";
+  const getStatusClass = (status) => {
     switch (status) {
       case "Active":
         return "text-green-500";
@@ -131,37 +147,40 @@ const PartnersTable = () => {
 
   // Filter logic
   const filteredPartners = Partners.filter((partner) => {
-    const matchesSearch = partner.owner_name.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const partnerDate = new Date(partner.createdAt.split('T')[0]);
-    const matchesDate = (!startDate || new Date(startDate) <= partnerDate) && 
-                       (!endDate || new Date(endDate) >= partnerDate);
-    
-    const matchesStatus = statusFilter ? 
-      (statusFilter === 'Deleted' && partner.is_deleted) || 
-      (!partner.is_deleted && (
-        (statusFilter === 'Active' && partner.isActive) ||
-        (statusFilter === 'Inactive' && !partner.isActive)
-      )) : true;
-    
+    const matchesSearch = partner.owner_name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+
+    const partnerDate = new Date(partner.createdAt.split("T")[0]);
+    const matchesDate =
+      (!startDate || new Date(startDate) <= partnerDate) &&
+      (!endDate || new Date(endDate) >= partnerDate);
+
+    const matchesStatus = statusFilter
+      ? (statusFilter === "Deleted" && partner.is_deleted) ||
+        (!partner.is_deleted &&
+          ((statusFilter === "Active" && partner.isActive) ||
+            (statusFilter === "Inactive" && !partner.isActive)))
+      : true;
+
     return matchesSearch && matchesDate && matchesStatus;
   });
 
   // Edit Modal Component
   const EditModal = ({ isOpen, onClose, partner, onSave }) => {
     const [formData, setFormData] = useState({
-      owner_name: partner?.owner_name || '',
-      email: partner?.email || '',
-      phone_number: partner?.phone_number || '',
-      address: partner?.address || '',
-      city: partner?.city || '',
-      pincode: partner?.pincode || ''
+      owner_name: partner?.owner_name || "",
+      email: partner?.email || "",
+      phone_number: partner?.phone_number || "",
+      address: partner?.address || "",
+      city: partner?.city || "",
+      pincode: partner?.pincode || "",
     });
 
     const handleChange = (e) => {
       setFormData({
         ...formData,
-        [e.target.name]: e.target.value
+        [e.target.name]: e.target.value,
       });
     };
 
@@ -181,12 +200,14 @@ const PartnersTable = () => {
               <X className="w-5 h-5" />
             </button>
           </div>
-          
+
           <form onSubmit={handleSubmit}>
             {/* Same form fields as AgentsTable */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Owner Name</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Owner Name
+                </label>
                 <input
                   type="text"
                   name="owner_name"
@@ -195,9 +216,11 @@ const PartnersTable = () => {
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Email
+                </label>
                 <input
                   type="email"
                   name="email"
@@ -206,9 +229,11 @@ const PartnersTable = () => {
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700">Phone Number</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Phone Number
+                </label>
                 <input
                   type="text"
                   name="phone_number"
@@ -219,7 +244,9 @@ const PartnersTable = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Address</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Address
+                </label>
                 <input
                   type="text"
                   name="address"
@@ -230,7 +257,9 @@ const PartnersTable = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">City</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  City
+                </label>
                 <input
                   type="text"
                   name="city"
@@ -241,7 +270,9 @@ const PartnersTable = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Pincode</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Pincode
+                </label>
                 <input
                   type="text"
                   name="pincode"
@@ -335,7 +366,6 @@ const PartnersTable = () => {
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
                 <option value="Deleted">Deleted</option>
-         
               </select>
 
               {/* Download Button */}
@@ -402,54 +432,94 @@ const PartnersTable = () => {
               </thead>
               <tbody>
                 {filteredPartners.map((partner, index) => (
-                  <tr key={partner._id} className={`border-t ${partner.is_deleted || partner.status === "Declined" ? 'bg-gray-50' : ''}`}>
+                  <tr
+                    key={partner._id}
+                    className={`border-t ${
+                      partner.is_deleted ? "bg-gray-50" : ""
+                    }`}
+                  >
                     <td className="p-4">{index + 1}</td>
                     <td className="p-4">
                       {partner.logo_url ? (
-                        <img 
-                          src={partner.logo_url} 
+                        <img
+                          src={partner.logo_url}
                           alt={`${partner.owner_name} logo`}
                           className="w-10 h-10 rounded-full object-cover"
                         />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-gray-500 text-sm">{partner.owner_name.charAt(0)}</span>
+                          <span className="text-gray-500 text-sm">
+                            {partner.owner_name.charAt(0)}
+                          </span>
                         </div>
                       )}
                     </td>
-                    <td className={`p-4 ${partner.is_deleted ? 'text-gray-400' : ''}`}>{partner.owner_name}</td>
-                    <td className={`p-4 ${partner.is_deleted ? 'text-gray-400' : ''}`}>{partner.select_category}</td>
-                    <td className={`p-4 ${partner.is_deleted ? 'text-gray-400' : ''}`}>{partner.phone_number}</td>
-                    <td className={`p-4 ${partner.is_deleted ? 'text-gray-400' : ''}`}>{partner.address}</td>
-                    <td className={`p-4 ${getStatusClass(partner.isActive ? 'Active' : 'Inactive', partner.is_deleted || partner.status === "Declined")}`}>
-                      {partner.is_deleted ? 'Deleted': partner.status ? partner.status : (partner.isActive ? 'Active' : 'Inactive')}
+                    <td
+                      className={`p-4 ${
+                        partner.is_deleted ? "text-gray-400" : ""
+                      }`}
+                    >
+                      {partner.owner_name}
+                    </td>
+                    <td
+                      className={`p-4 ${
+                        partner.is_deleted ? "text-gray-400" : ""
+                      }`}
+                    >
+                      {partner.role}
+                    </td>
+                    <td
+                      className={`p-4 ${
+                        partner.is_deleted ? "text-gray-400" : ""
+                      }`}
+                    >
+                      {partner.phone_number}
+                    </td>
+                    <td
+                      className={`p-4 ${
+                        partner.is_deleted ? "text-gray-400" : ""
+                      }`}
+                    >
+                      {partner.address}
+                    </td>
+                    <td
+                      className={`p-4 ${getStatusClass(
+                        partner.is_deleted === false ? "Active" : "Inactive"
+                      )}`}
+                    >
+                      {partner.is_deleted === false ? "Active" : "Inactive"}
                     </td>
                     <td className="p-4 flex items-center space-x-2">
-                      <button 
-                        className={`p-2 bg-green-100 rounded-md hover:bg-green-200 ${partner.is_deleted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      <button
+                        className={`p-2 bg-green-100 rounded-md hover:bg-green-200`}
                         onClick={() => {
-                          if (!partner.is_deleted && partner.status !== "Declined") {
-                            setSelectedPartner(partner);
-                            setEditModalOpen(true);
-                          }
+                          setSelectedPartner(partner);
+                          setEditModalOpen(true);
                         }}
-                        disabled={partner.is_deleted || partner.status === "Declined"}
                       >
-                        <Edit className={`w-4 h-4 text-green-500 ${partner.is_deleted ? 'opacity-50' : ''}`} />
+                        <Edit
+                          className={`w-4 h-4 text-green-500 ${
+                            partner.is_deleted ? "opacity-50" : ""
+                          }`}
+                        />
                       </button>
-                      <button 
-                        className={`p-2 bg-red-100 rounded-md hover:bg-red-200 ${partner.is_deleted || partner.status === "Declined" ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        onClick={() => !partner.is_deleted && partner.status !== "Declined" && handleDelete(partner._id)}
-                        disabled={partner.is_deleted || partner.status === "Declined"}
+                      <button
+                        className={`p-2 bg-red-100 rounded-md hover:bg-red-200`}
+                        onClick={() => handleDelete(partner._id)}
                       >
-                        <Trash className={`w-4 h-4 text-red-500 ${partner.is_deleted ? 'opacity-50' : ''}`} />
+                        <Trash className={`w-4 h-4 text-red-500`} />
                       </button>
-                      <button 
-                        className={`p-2 ${partner.isActive ? 'bg-orange-100' : 'bg-blue-100'} rounded-md hover:opacity-80 ${partner.is_deleted ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        onClick={() => !partner.is_deleted && handleFreeze(partner._id, partner.isActive)}
-                        disabled={partner.is_deleted}
+                      <button
+                        className={`p-2 ${
+                          partner.isActive ? "bg-orange-100" : "bg-blue-100"
+                        } rounded-md hover:opacity-80 ${
+                          partner.is_deleted ? "opacity-50" : ""
+                        }`}
+                        onClick={() =>
+                          handleFreeze(partner._id, partner.is_deleted)
+                        }
                       >
-                        {partner.isActive ? 'Freeze' : 'Unfreeze'}
+                        {partner.is_deleted == false ? "Freeze" : "Unfreeze"}
                       </button>
                     </td>
                   </tr>

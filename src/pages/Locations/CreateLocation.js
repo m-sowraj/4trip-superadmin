@@ -5,8 +5,8 @@ import axios from '../../utils/axios';
 const CreateLocation = () => {
   const [formData, setFormData] = useState({
     name: '',
-    latitude: '',
-    longitude: '',
+    map_url: '',
+    iframe_url: '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,17 +17,17 @@ const CreateLocation = () => {
   };
 
   const validateForm = () => {
-    const { name, latitude, longitude } = formData;
+    const { name, map_url, iframe_url } = formData;
     if (!name.trim()) {
       toast.error('Name is required.');
       return false;
     }
-    if (!latitude || isNaN(latitude)) {
-      toast.error('Valid Latitude is required.');
+    if (!map_url || isNaN(map_url)) {
+      toast.error('Valid map_url is required.');
       return false;
     }
-    if (!longitude || isNaN(longitude)) {
-      toast.error('Valid Longitude is required.');
+    if (!iframe_url || isNaN(iframe_url)) {
+      toast.error('Valid iframe_url is required.');
       return false;
     }
     return true;
@@ -46,7 +46,7 @@ const CreateLocation = () => {
       }
 
       toast.success('Location created successfully!');
-      setFormData({ name: '', latitude: '', longitude: '' });
+      setFormData({ name: '', map_url: '', iframe_url: '' });
     } catch (error) {
       toast.error(error.message);
     } finally {
@@ -71,27 +71,27 @@ const CreateLocation = () => {
           />
         </div>
         <div className="mb-4">
-          <label className="block text-gray-700">Latitude</label>
+          <label className="block text-gray-700">Map Url</label>
           <input
             type="number"
-            name="latitude"
-            value={formData.latitude}
+            name="map_url"
+            value={formData.map_url}
             onChange={handleChange}
             className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-            placeholder="Enter latitude"
+            placeholder="Enter Map Url"
             step="any"
             required
           />
         </div>
         <div className="mb-4">
-          <label className="block text-gray-700">Longitude</label>
+          <label className="block text-gray-700">Iframe Url </label>
           <input
             type="number"
-            name="longitude"
-            value={formData.longitude}
+            name="iframe_url"
+            value={formData.iframe_url}
             onChange={handleChange}
             className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-            placeholder="Enter longitude"
+            placeholder="Enter Iframe Url"
             step="any"
             required
           />

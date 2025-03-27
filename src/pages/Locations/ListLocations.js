@@ -1,39 +1,39 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { SearchIcon, Eye, Edit, Trash } from 'lucide-react';
-import { toast } from 'react-toastify';
-import axios from '../../utils/axios';
-import Modal from '../../components/Modal';
-
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { SearchIcon, Eye, Edit, Trash } from "lucide-react";
+import { toast } from "react-toastify";
+import Modal from "../../components/Modal";
+import "react-toastify/dist/ReactToastify.css";
+import axiosInstance from "../../utils/axios";
 const ListLocations = () => {
   const navigate = useNavigate();
 
   const [locations, setLocations] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  
+  const [searchTerm, setSearchTerm] = useState("");
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedLocation, setSelectedLocation] = useState(null);
-  
+
   // Modal states
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  
+
   const [formData, setFormData] = useState({
-    name: '',
-    latitude: '',
-    longitude: '',
+    name: "",
+    map_url: "",
+    iframe_url: "",
   });
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const locationsPerPage = 10;
 
   const fetchLocations = async () => {
     try {
-      const response = await axios.get('/locations');
-      setLocations(response.data);
+      const response = await axiosInstance.get("/location");
+      setLocations(response.data.data);
     } catch (error) {
       toast.error(error.message);
     }
@@ -49,37 +49,38 @@ const ListLocations = () => {
   };
 
   const validateForm = () => {
-    const { name, latitude, longitude } = formData;
+    const { name, map_url, iframe_url } = formData;
     if (!name.trim()) {
-      toast.error('Name is required.');
+      toast.error("Name is required.");
       return false;
     }
-    if (!latitude || isNaN(latitude)) {
-      toast.error('Valid Latitude is required.');
+    if (!map_url) {
+      toast.error("Valid map_url is required.");
       return false;
     }
-    if (!longitude || isNaN(longitude)) {
-      toast.error('Valid Longitude is required.');
+    if (!iframe_url) {
+      toast.error("Valid iframe_url is required.");
       return false;
     }
     return true;
   };
 
   const handleCreate = async (e) => {
+    console.log("function triggered");
     e.preventDefault();
     if (!validateForm()) return;
 
     setIsSubmitting(true);
     try {
-      const response = await axios.post('/locations', formData);
-
+      const response = await axiosInstance.post("/location/create", formData);
       if (response.status !== 201) {
-        throw new Error(response.data.message || 'Failed to create location.');
+        throw new Error(response.data.message || "Failed to create location.");
       }
-
-      toast.success('Location created successfully!');
+      setTimeout(() => {
+        toast.success("Location created successfully!");
+      }, 1000);
       setIsCreateModalOpen(false);
-      setFormData({ name: '', latitude: '', longitude: '' });
+      setFormData({ name: "", map_url: "", iframe_url: "" });
       fetchLocations();
     } catch (error) {
       toast.error(error.message);
@@ -94,13 +95,15 @@ const ListLocations = () => {
 
     setIsSubmitting(true);
     try {
-      const response = await axios.put(`/locations/${selectedLocation._id}`, formData);
+      const response = await axiosInstance.put(
+        `/location/${selectedLocation._id}`,formData
+      );
 
       if (response.status !== 200) {
-        throw new Error(response.data.message || 'Failed to update location.');
+        throw new Error(response.data.message || "Failed to update location.");
       }
 
-      toast.success('Location updated successfully!');
+      toast.success("Location updated successfully!");
       setIsEditModalOpen(false);
       fetchLocations();
     } catch (error) {
@@ -113,13 +116,11 @@ const ListLocations = () => {
   const handleDelete = async () => {
     setIsSubmitting(true);
     try {
-      const response = await axios.delete(`/locations/${selectedLocation._id}`);
-
+      const response = await axiosInstance.delete(`/location/${selectedLocation._id}`);
       if (response.status !== 200) {
-        throw new Error(response.data.message || 'Failed to delete location.');
+        throw new Error(response.data.message || "Failed to delete location.");
       }
-
-      toast.success('Location deleted successfully!');
+      toast.success("Location deleted successfully!");
       setIsDeleteModalOpen(false);
       fetchLocations();
     } catch (error) {
@@ -133,8 +134,8 @@ const ListLocations = () => {
     setSelectedLocation(location);
     setFormData({
       name: location.name,
-      latitude: getDecimalValue(location.latitude),
-      longitude: getDecimalValue(location.longitude),
+      map_url: getDecimalValue(location.map_url),
+      iframe_url: getDecimalValue(location.iframe_url),
     });
     setIsEditModalOpen(true);
   };
@@ -156,7 +157,10 @@ const ListLocations = () => {
 
   const indexOfLastLocation = currentPage * locationsPerPage;
   const indexOfFirstLocation = indexOfLastLocation - locationsPerPage;
-  const currentLocations = filteredLocations.slice(indexOfFirstLocation, indexOfLastLocation);
+  const currentLocations = filteredLocations.slice(
+    indexOfFirstLocation,
+    indexOfLastLocation
+  );
   const totalPages = Math.ceil(filteredLocations.length / locationsPerPage);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
@@ -175,7 +179,7 @@ const ListLocations = () => {
         <h2 className="text-2xl font-semibold">Locations Management</h2>
         <button
           onClick={() => {
-            setFormData({ name: '', latitude: '', longitude: '' }); // Reset form
+            setFormData({ name: "", map_url: "", iframe_url: "" }); // Reset form
             setIsCreateModalOpen(true);
           }}
           className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
@@ -204,24 +208,47 @@ const ListLocations = () => {
           <thead className="bg-gray-100">
             <tr>
               <th className="p-4 text-left">Name</th>
-              <th className="p-4 text-left">Latitude</th>
-              <th className="p-4 text-left">Longitude</th>
+              <th className="p-4 text-left">Map Url</th>
+              <th className="p-4 text-left">Iframe Url</th>
               <th className="p-4 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
             {currentLocations.map((location) => (
               <tr key={location._id} className="border-t">
-                <td className="p-4">{location.name}</td>
-                <td className="p-4">{getDecimalValue(location.latitude)}</td>
-                <td className="p-4">{getDecimalValue(location.longitude)}</td>
+                <td className="p-4">
+                  <p rel="noopener noreferrer" className="text-black  " p>
+                    {location.name}
+                  </p>
+                </td>
+                <td className="p-4">
+                  <a
+                    href={location.map_url}
+                    target="_blank"
+                    className="p-4 underline text-blue-500 "
+                  >
+                    click here to navigate
+                  </a>
+                </td>
+                <td className="p-4">
+                  <iframe
+                    src={location.iframe_url}
+                    width="200"
+                    height="150"
+                    style={{ border: 0 }}
+                    allowFullScreen=""
+                    loading="lazy"
+                  ></iframe>
+                  <br />
+                </td>
+
                 <td className="p-4 flex items-center space-x-2">
                   <button
                     onClick={() => openViewModal(location)}
                     className="text-blue-600 hover:text-blue-800"
                     title="View"
                   >
-                    <Eye className="w-5 h-5" />
+                    {/* <Eye className="w-5 h-5" /> */}
                   </button>
                   <button
                     onClick={() => openEditModal(location)}
@@ -271,27 +298,27 @@ const ListLocations = () => {
             />
           </div>
           <div className="mb-4">
-            <label className="block text-gray-700">Latitude</label>
+            <label className="block text-gray-700">Map Url</label>
             <input
-              type="number"
-              name="latitude"
-              value={formData.latitude}
+              type="text"
+              name="map_url"
+              value={formData.map_url}
               onChange={handleChange}
               className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-              placeholder="Enter latitude"
+              placeholder="Enter Map Url"
               step="any"
               required
             />
           </div>
           <div className="mb-4">
-            <label className="block text-gray-700">Longitude</label>
+            <label className="block text-gray-700">Iframe Url</label>
             <input
-              type="number"
-              name="longitude"
-              value={formData.longitude}
+              type="text"
+              name="iframe_url"
+              value={formData.iframe_url}
               onChange={handleChange}
               className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-              placeholder="Enter longitude"
+              placeholder="Enter Iframe Url"
               step="any"
               required
             />
@@ -299,11 +326,11 @@ const ListLocations = () => {
           <button
             type="submit"
             className={`w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 ${
-              isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+              isSubmitting ? "opacity-50 cursor-not-allowed" : ""
             }`}
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Creating...' : 'Create Location'}
+            {isSubmitting ? "Creating..." : "Create Location"}
           </button>
         </form>
       </Modal>
@@ -328,27 +355,27 @@ const ListLocations = () => {
             />
           </div>
           <div className="mb-4">
-            <label className="block text-gray-700">Latitude</label>
+            <label className="block text-gray-700">Map Url</label>
             <input
-              type="number"
-              name="latitude"
-              value={formData.latitude}
+              type="text"
+              name="map_url"
+              value={formData.map_url}
               onChange={handleChange}
               className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-              placeholder="Enter latitude"
+              placeholder="Enter map_url"
               step="any"
               required
             />
           </div>
           <div className="mb-4">
-            <label className="block text-gray-700">Longitude</label>
+            <label className="block text-gray-700">Iframe Url</label>
             <input
-              type="number"
-              name="longitude"
-              value={formData.longitude}
+              type="text"
+              name="iframe_url"
+              value={formData.iframe_url}
               onChange={handleChange}
               className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-              placeholder="Enter longitude"
+              placeholder="Enter iframe_url"
               step="any"
               required
             />
@@ -356,11 +383,11 @@ const ListLocations = () => {
           <button
             type="submit"
             className={`w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 ${
-              isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+              isSubmitting ? "opacity-50 cursor-not-allowed" : ""
             }`}
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Updating...' : 'Update Location'}
+            {isSubmitting ? "Updating..." : "Update Location"}
           </button>
         </form>
       </Modal>
@@ -373,7 +400,9 @@ const ListLocations = () => {
       >
         <div className="mb-4">
           <p>Are you sure you want to delete this location?</p>
-          <p><strong>Name:</strong> {selectedLocation?.name}</p>
+          <p>
+            <strong>Name:</strong> {selectedLocation?.name}
+          </p>
         </div>
         <div className="flex justify-end space-x-2">
           <button
@@ -385,31 +414,45 @@ const ListLocations = () => {
           <button
             onClick={handleDelete}
             className={`bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 ${
-              isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+              isSubmitting ? "opacity-50 cursor-not-allowed" : ""
             }`}
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Deleting...' : 'Delete'}
+            {isSubmitting ? "Deleting..." : "Delete"}
           </button>
         </div>
       </Modal>
 
       {/* View Modal */}
-      <Modal
+      {/* <Modal
         isOpen={isViewModalOpen}
         onClose={() => setIsViewModalOpen(false)}
         title="Location Details"
       >
         {selectedLocation && (
           <div className="mb-4">
-            <p><strong>Name:</strong> {selectedLocation.name}</p>
-            <p><strong>Latitude:</strong> {getDecimalValue(selectedLocation.latitude)}</p>
-            <p><strong>Longitude:</strong> {getDecimalValue(selectedLocation.longitude)}</p>
-            <p><strong>Created At:</strong> {new Date(selectedLocation.createdAt).toLocaleString()}</p>
-            <p><strong>Updated At:</strong> {new Date(selectedLocation.updatedAt).toLocaleString()}</p>
+            <p>
+              <strong>Name:</strong> {selectedLocation.name}
+            </p>
+            <p>
+              <strong>map_url:</strong>{" "}
+              {getDecimalValue(selectedLocation.map_url)}
+            </p>
+            <p>
+              <strong>iframe_url:</strong>{" "}
+              {getDecimalValue(selectedLocation.iframe_url)}
+            </p>
+            <p>
+              <strong>Created At:</strong>{" "}
+              {new Date(selectedLocation.createdAt).toLocaleString()}
+            </p>
+            <p>
+              <strong>Updated At:</strong>{" "}
+              {new Date(selectedLocation.updatedAt).toLocaleString()}
+            </p>
           </div>
         )}
-      </Modal>
+      </Modal> */}
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -421,8 +464,8 @@ const ListLocations = () => {
                 onClick={() => paginate(index + 1)}
                 className={`px-3 py-1 rounded-md ${
                   currentPage === index + 1
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 }`}
               >
                 {index + 1}

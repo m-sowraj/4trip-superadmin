@@ -11,15 +11,17 @@ const LoginForm = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        axiosInstance.post("/superadmin/login", {
+        axiosInstance.post("/auth/login", {
             phone_number: phoneNumber,
             password,
+            role:"SuperAdmin"
         })
             .then((response) => {
                 const data = response.data;
+                console.log("Success:", data);
                 if (data.token) {
                     localStorage.setItem("token_superadmin", data.token);
-                    localStorage.setItem("id_superadmin", data.admin._id);
+                    localStorage.setItem("id_superadmin", data.user._id);
                     navigate("/");
                 } else {
                     toast.error(data.error || "Login failed");

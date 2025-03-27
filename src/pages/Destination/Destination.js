@@ -1,28 +1,33 @@
-import { Edit, SearchIcon, Trash, X, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Edit,
+  SearchIcon,
+  Trash,
+  X,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-import Modal from "./AddDestinaton";
+import Modal from "./AddDestinaton"; // Ensure the import path is correct
 import { toast } from "react-toastify";
 import axiosInstance from "../../utils/axios";
 
 const Destination = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingPlace, setEditingPlace] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [previewImages, setPreviewImages] = useState([]);
-
-  const [Destination, setDestination] = useState([]);
+  const [destinations, setDestinations] = useState([]);
 
   const fetchDestinations = async () => {
     try {
-      const response = await axiosInstance.get("/superadmin/allplaces");
-      setDestination(response.data.data);
+      const response = await axiosInstance.get("/destination");
+      setDestinations(response.data.data);
     } catch (error) {
       toast.error("Error fetching destinations");
     }
@@ -40,56 +45,58 @@ const Destination = () => {
 
   // Download as Excel
   const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(Destination); // Convert JSON to worksheet
-    const workbook = XLSX.utils.book_new(); // Create a new workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Destination"); // Add the worksheet
-    XLSX.writeFile(workbook, "Destination_Data.xlsx"); // Download the file
+    const worksheet = XLSX.utils.json_to_sheet(destinations);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Destinations");
+    XLSX.writeFile(workbook, "Destinations_Data.xlsx");
   };
 
   // Download as CSV
   const exportToCSV = () => {
-    const worksheet = XLSX.utils.json_to_sheet(Destination);
+    const worksheet = XLSX.utils.json_to_sheet(destinations);
     const csv = XLSX.utils.sheet_to_csv(worksheet);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", "Destination_Data.csv");
+    link.setAttribute("download", "Destinations_Data.csv");
     link.click();
   };
 
   // Download as PDF
   const exportToPDF = () => {
     const doc = new jsPDF();
-    doc.text("Destination Data", 20, 10);
+    doc.text("Destinations Data", 20, 10);
     const tableColumn = [
       "Sr. No.",
-      "Partner Name",
-      "Email",
-      "Phone Number",
-      "Registration Date",
-      "Status",
+      "Place Name",
+      "Location",
+      "Nearby Attractions",
+      "Best Time to Visit",
+      "Short Summary",
+      "Top Destination",
     ];
-    const tableRows = Destination.map((Partner, index) => [
+    const tableRows = destinations.map((destination, index) => [
       index + 1,
-      Partner.name,
-      Partner.email,
-      Partner.phone,
-      Partner.location,
-      Partner.status,
+      destination.place_name,
+      destination.locationName,
+      destination.near_by_attractions,
+      destination.best_time_to_visit,
+      destination.short_summary,
+      destination.top_destination ? "Yes" : "No",
     ]);
     doc.autoTable({
       head: [tableColumn],
       body: tableRows,
       startY: 20,
     });
-    doc.save("Destination_Data.pdf");
+    doc.save("Destinations_Data.pdf");
   };
 
   // Filter logic
-  const filteredDestination = Destination.filter((Partner) => {
-    return Partner.place_name.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+  const filteredDestinations = destinations.filter((destination) =>
+    destination.place_name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleViewImage = (place) => {
     if (place.image_urls && place.image_urls.length > 0) {
@@ -97,70 +104,56 @@ const Destination = () => {
       setCurrentImageIndex(0);
       setImagePreview(true);
     } else {
-      toast.info('No images available');
+      toast.info("No images available");
     }
   };
 
   const handleNextImage = (e) => {
     e.stopPropagation();
-    setCurrentImageIndex((prev) => 
+    setCurrentImageIndex((prev) =>
       prev === previewImages.length - 1 ? 0 : prev + 1
     );
   };
 
   const handlePrevImage = (e) => {
     e.stopPropagation();
-    setCurrentImageIndex((prev) => 
+    setCurrentImageIndex((prev) =>
       prev === 0 ? previewImages.length - 1 : prev - 1
     );
   };
 
   const handleEdit = (place) => {
-    // Ensure all required fields are present
-    const editPlace = {
-      _id: place._id,
-      place_name: place.place_name,
-      Location: place.Location,
-      Nearby: place.Nearby,
-      best_time: place.best_time,
-      short_summary: place.short_summary,
-      latitude: place.latitude,
-      longitude: place.longitude
-    };
-    setEditingPlace(editPlace);
+    setEditingPlace(place);
     setIsEditModalOpen(true);
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this place?')) return;
+    if (!window.confirm("Are you sure you want to delete this place?")) return;
 
     try {
       await axiosInstance.delete(`/superadmin/places/${id}`);
-      toast.success('Place deleted successfully');
-      await fetchDestinations(); // Refresh the list
+      toast.success("Place deleted successfully");
+      await fetchDestinations();
     } catch (error) {
-      toast.error('Failed to delete place');
+      toast.error("Failed to delete place");
     }
   };
 
   return (
     <div className="w-full h-[90%] flex flex-col">
       {isModalOpen && (
-        <Modal 
-          setIsOpen={setIsModalOpen} 
-          onUpdate={() => fetchDestinations()} 
-        />
+        <Modal setIsOpen={setIsModalOpen} onUpdate={fetchDestinations} />
       )}
       {isEditModalOpen && (
-        <Modal 
+        <Modal
           setIsOpen={setIsEditModalOpen}
-          onUpdate={() => fetchDestinations()}
+          onUpdate={fetchDestinations}
           editingPlace={editingPlace}
         />
       )}
-      
+
       {imagePreview && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
           onClick={() => {
             setImagePreview(null);
@@ -169,21 +162,21 @@ const Destination = () => {
           }}
         >
           <div className="relative max-w-4xl max-h-[90vh]">
-            <img 
-              src={previewImages[currentImageIndex]} 
-              alt={`Preview ${currentImageIndex + 1}`} 
+            <img
+              src={previewImages[currentImageIndex]}
+              alt={`Preview ${currentImageIndex + 1}`}
               className="max-w-full max-h-[90vh] object-contain"
             />
-            
+
             {previewImages.length > 1 && (
               <>
-                <button 
+                <button
                   className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 p-2 rounded-full"
                   onClick={handlePrevImage}
                 >
                   <ChevronLeft className="w-6 h-6" />
                 </button>
-                <button 
+                <button
                   className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 p-2 rounded-full"
                   onClick={handleNextImage}
                 >
@@ -194,8 +187,8 @@ const Destination = () => {
                 </div>
               </>
             )}
-            
-            <button 
+
+            <button
               className="absolute top-2 right-2 bg-white rounded-full p-1"
               onClick={() => {
                 setImagePreview(null);
@@ -210,7 +203,7 @@ const Destination = () => {
       )}
 
       <div className="flex items-center justify-between w-full mb-4">
-        <div className="font-medium text-black text-xl">Place to Visit</div>
+        <div className="font-medium text-black text-xl">Places to Visit</div>
         <div
           onClick={() => setIsModalOpen(true)}
           className="cursor-pointer px-4 py-1 text-white rounded-md bg-[#E27D60]"
@@ -220,10 +213,8 @@ const Destination = () => {
       </div>
 
       <div className="flex-1 bg-white rounded-lg shadow-md w-full flex flex-col overflow-hidden">
-        {/* Search and Filters */}
         <div className="p-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            {/* Search */}
             <div className="flex items-center border bg-white px-4 rounded-full border-gray-300">
               <SearchIcon className="w-5 h-5 text-gray-500" />
               <input
@@ -236,7 +227,6 @@ const Destination = () => {
             </div>
 
             <div className="flex gap-6">
-              {/* Download Button */}
               <div className="relative inline-block">
                 <button
                   className="bg-[var(--green)] text-white px-4 py-2 rounded-lg"
@@ -282,7 +272,6 @@ const Destination = () => {
           </div>
         </div>
 
-        {/* Table with scroll */}
         <div className="flex-1 overflow-hidden">
           <div className="h-full overflow-auto">
             <table className="w-full bg-white">
@@ -295,32 +284,34 @@ const Destination = () => {
                 </tr>
               </thead>
               <tbody>
-                {Destination.length === 0 ? (
+                {filteredDestinations.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="text-center py-4">Loading...</td>
+                    <td colSpan="4" className="text-center py-4">
+                      No destinations found
+                    </td>
                   </tr>
                 ) : (
-                  filteredDestination.map((place, index) => (
-                    <tr key={place._id} className="border-t">
+                  filteredDestinations.map((destination, index) => (
+                    <tr key={destination._id} className="border-t">
                       <td className="p-4">{index + 1}</td>
-                      <td className="p-4">{place.place_name}</td>
-                      <td className="p-4">{place.location}</td>
+                      <td className="p-4">{destination.place_name}</td>
+                      <td className="p-4">{destination.locationName}</td>
                       <td className="p-4 flex items-center space-x-2">
-                        <button 
+                        <button
                           className="p-2 bg-blue-100 rounded-md hover:bg-blue-200"
-                          onClick={() => handleViewImage(place)}
+                          onClick={() => handleViewImage(destination)}
                         >
                           View Image
                         </button>
-                        <button 
+                        <button
                           className="p-2 bg-green-100 rounded-md hover:bg-green-200"
-                          onClick={() => handleEdit(place)}
+                          onClick={() => handleEdit(destination)}
                         >
                           <Edit className="w-4 h-4 text-green-500" />
                         </button>
                         <button
                           className="p-2 bg-red-100 rounded-md hover:bg-red-200"
-                          onClick={() => handleDelete(place._id)}
+                          onClick={() => handleDelete(destination._id)}
                         >
                           <Trash className="w-4 h-4 text-red-500" />
                         </button>

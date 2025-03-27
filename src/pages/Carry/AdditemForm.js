@@ -1,28 +1,38 @@
-import { Pencil } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
-import { API_BASE_URL } from '../../utils/config';
+import { Pencil } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { toast } from "react-toastify";
+import { API_BASE_URL } from "../../utils/config";
 import axiosInstance from "../../utils/axios";
 
 const AddItemForm = () => {
-  const [selectedLocation, setSelectedLocation] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState("");
   const [locations, setLocations] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [alreadySelectedItems, setAlreadySelectedItems] = useState([]); // Track already selected items
 
   // Static items list
   const staticItems = [
-    'Bag', 'Water Bottle', 'First Aid Kit', 'Flashlight', 
-    'Snacks', 'Camera', 'Power Bank', 'Umbrella',
-    'Sunscreen', 'Hat', 'Walking Shoes', 'Map'
+    "Bag",
+    "Water Bottle",
+    "First Aid Kit",
+    "Flashlight",
+    "Snacks",
+    "Camera",
+    "Power Bank",
+    "Umbrella",
+    "Sunscreen",
+    "Hat",
+    "Walking Shoes",
+    "Map",
   ];
 
   // Fetch locations on component mount
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const response = await axiosInstance.get("/locations");
-        setLocations(response.data);
+        const response = await axiosInstance.get("/location");
+        setLocations(response.data.data);
       } catch (error) {
         toast.error(error.message);
       }
@@ -31,18 +41,39 @@ const AddItemForm = () => {
     fetchLocations();
   }, []);
 
+  // Fetch already selected items when location changes
+  useEffect(() => {
+    const fetchSelectedItems = async () => {
+      if (selectedLocation) {
+        try {
+          const response = await axiosInstance.get(
+            `/things-to-carry/${selectedLocation}`
+          );
+          const selectedItemNames = response.data.data.map((item) => item.name);
+          setAlreadySelectedItems(selectedItemNames); // Store already selected items
+          setSelectedItems(selectedItemNames); // Mark them as selected in the UI
+        } catch (error) {
+          toast.error("Failed to fetch selected items");
+        }
+      } else {
+        setAlreadySelectedItems([]);
+        setSelectedItems([]);
+      }
+    };
+
+    fetchSelectedItems();
+  }, [selectedLocation]);
+
   // Handle item selection
   const handleItemSelect = (item) => {
-    setSelectedItems(prev => 
-      prev.includes(item) 
-        ? prev.filter(i => i !== item)
-        : [...prev, item]
+    setSelectedItems((prev) =>
+      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]
     );
   };
 
   // Handle select all
   const handleSelectAll = () => {
-    setSelectedItems(prev => 
+    setSelectedItems((prev) =>
       prev.length === staticItems.length ? [] : [...staticItems]
     );
   };
@@ -51,25 +82,32 @@ const AddItemForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedLocation || selectedItems.length === 0) {
-      toast.error('Please select a location and at least one item');
+      toast.error("Please select a location and at least one item");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // Submit each selected item for the location
-      await Promise.all(selectedItems.map(item => 
-        axiosInstance.post("/superadmin/thingstocarry", {
-          name: item,
-          location_id: selectedLocation
-        })
-      ));
+      // Filter out items that are already selected for the location
+      const newItems = selectedItems.filter(
+        (item) => !alreadySelectedItems.includes(item)
+      );
 
-      toast.success('Items added successfully');
+      // Submit only new items
+      await Promise.all(
+        newItems.map((item) =>
+          axiosInstance.post("/things-to-carry", {
+            name: item,
+            location_id: selectedLocation,
+          })
+        )
+      );
+
+      toast.success("Items added successfully");
       setSelectedItems([]);
-      setSelectedLocation('');
+      setSelectedLocation("");
     } catch (error) {
-      toast.error('Failed to add items');
+      toast.error("Failed to add items");
     } finally {
       setIsSubmitting(false);
     }
@@ -85,7 +123,10 @@ const AddItemForm = () => {
         <div className="px-6 flex-1 overflow-auto">
           <div className="space-y-4">
             <div className="sticky top-0 bg-white pt-2 pb-4 z-10">
-              <label htmlFor="location" className="block text-gray-700 font-medium mb-2">
+              <label
+                htmlFor="location"
+                className="block text-gray-700 font-medium mb-2"
+              >
                 Select Location
               </label>
               <select
@@ -111,7 +152,9 @@ const AddItemForm = () => {
                 className="text-blue-600 flex items-center gap-2"
               >
                 <Pencil className="w-4 h-4" />
-                {selectedItems.length === staticItems.length ? 'Deselect All' : 'Select All'}
+                {selectedItems.length === staticItems.length
+                  ? "Deselect All"
+                  : "Select All"}
               </button>
             </div>
 
@@ -123,8 +166,8 @@ const AddItemForm = () => {
                   onClick={() => handleItemSelect(item)}
                   className={`border-2 px-3 py-2 rounded-lg transition-colors ${
                     selectedItems.includes(item)
-                      ? 'bg-[#E27D60] text-white border-[#E27D60]'
-                      : 'border-gray-300 hover:border-[#E27D60]'
+                      ? "bg-[#E27D60] text-white border-[#E27D60]"
+                      : "border-gray-300 hover:border-[#E27D60]"
                   }`}
                 >
                   {item}
@@ -140,7 +183,7 @@ const AddItemForm = () => {
               type="button"
               onClick={() => {
                 setSelectedItems([]);
-                setSelectedLocation('');
+                setSelectedLocation("");
               }}
               className="border text-black font-medium py-2 px-4 rounded-lg"
             >
@@ -150,10 +193,10 @@ const AddItemForm = () => {
               type="submit"
               disabled={isSubmitting}
               className={`bg-[#E27D60] text-white font-medium py-2 px-4 rounded-lg ${
-                isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                isSubmitting ? "opacity-50 cursor-not-allowed" : ""
               }`}
             >
-              {isSubmitting ? 'Adding...' : 'Save'}
+              {isSubmitting ? "Adding..." : "Save"}
             </button>
           </div>
         </div>

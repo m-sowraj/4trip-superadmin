@@ -1,21 +1,21 @@
-import { Trash2 } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
-import { API_BASE_URL } from '../../utils/config';
+import { Trash2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { toast } from "react-toastify";
+import { API_BASE_URL } from "../../utils/config";
 import axiosInstance from "../../utils/axios";
 
 const ListView = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedLocation, setSelectedLocation] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState("");
   const [locations, setLocations] = useState([]);
 
   // Fetch locations
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const response = await axiosInstance.get("/locations");
-        setLocations(response.data);
+        const response = await axiosInstance.get("/location");
+        setLocations(response.data.data || []);
         setLoading(false);
       } catch (error) {
         toast.error(error.message);
@@ -27,38 +27,42 @@ const ListView = () => {
   }, []);
 
   // Fetch items when location changes
-  useEffect(() => {
-    const fetchItems = async () => {
-      if (!selectedLocation) {
-        setItems([]);
-        return;
-      }
-      
-      setLoading(true);
-      try {
-        const response = await axiosInstance.get(`/superadmin/thingstocarry/${selectedLocation}`);
-        setItems(response.data.data || []);
-      } catch (error) {
-        toast.error(error.message);
-        setItems([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchItems = async () => {
+    if (!selectedLocation) {
+      setItems([]);
+      return;
+    }
 
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get(
+        `/things-to-carry/${selectedLocation}`
+      );
+      setItems(response.data.data || []);
+    } catch (error) {
+      toast.error(error.message);
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Call fetchItems when selectedLocation changes
+  useEffect(() => {
     fetchItems();
   }, [selectedLocation]);
 
+  // Handle delete item
   const handleDelete = async (itemId) => {
-    if (!window.confirm('Are you sure you want to delete this item?')) return;
+    if (!window.confirm("Are you sure you want to delete this item?")) return;
 
     try {
-      const response = await axiosInstance.delete(`/superadmin/thingstocarry/${selectedLocation}/${itemId}`);
-      
-      if (!response.ok) throw new Error('Failed to delete item');
-      
-      toast.success('Item deleted successfully');
-      setItems(items.filter(item => item.id !== itemId));
+      const response = await axiosInstance.delete(
+        `/things-to-carry/${selectedLocation}/${itemId}`
+      );
+      if (!response.ok) throw new Error("Failed to delete item");
+      toast.success("Item deleted successfully");
+      fetchItems(); // Refetch items after deletion
     } catch (error) {
       toast.error(error.message);
     }
@@ -102,7 +106,6 @@ const ListView = () => {
                 <tr>
                   <th className="px-4 py-3 text-left">Sr No.</th>
                   <th className="px-4 py-3 text-left">Item Name</th>
-                  {/* <th className="px-4 py-3 text-left">Location</th> */}
                   <th className="px-4 py-3 text-left">Actions</th>
                 </tr>
               </thead>
@@ -111,12 +114,11 @@ const ListView = () => {
                   <tr key={item.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">{index + 1}</td>
                     <td className="px-4 py-3">{item.name}</td>
-                    {/* <td className="px-4 py-3">{item.location_name}</td> */}
                     <td className="px-4 py-3">
                       <div className="flex gap-3">
                         <Trash2
                           className="w-5 h-5 text-red-600 cursor-pointer hover:text-red-700"
-                          onClick={() => handleDelete(item.id)}
+                          onClick={() => handleDelete(item._id)}
                         />
                       </div>
                     </td>
