@@ -1,122 +1,70 @@
-import { Pencil } from "lucide-react";
-import React, { useState, useEffect } from "react";
-import { toast } from "react-toastify";
-import { API_BASE_URL } from "../../utils/config";
-import axiosInstance from "../../utils/axios";
+import { Pencil, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 
-const AddItemForm = () => {
-  const [selectedLocation, setSelectedLocation] = useState("");
-  const [locations, setLocations] = useState([]);
-  const [selectedItems, setSelectedItems] = useState([]);
+const AddItemForm = ({
+  onClose,
+  staticItems,
+  locations,
+  selectedLocation,
+  onLocationChange,
+  alreadySelectedItems,
+  onAddItems
+}) => {
+  const [selectedItems, setSelectedItems] = useState([...alreadySelectedItems]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [alreadySelectedItems, setAlreadySelectedItems] = useState([]); // Track already selected items
 
-  // Static items list
-  const staticItems = [
-    "Bag",
-    "Water Bottle",
-    "First Aid Kit",
-    "Flashlight",
-    "Snacks",
-    "Camera",
-    "Power Bank",
-    "Umbrella",
-    "Sunscreen",
-    "Hat",
-    "Walking Shoes",
-    "Map",
-  ];
-
-  // Fetch locations on component mount
-  useEffect(() => {
-    const fetchLocations = async () => {
-      try {
-        const response = await axiosInstance.get("/location");
-        setLocations(response.data.data);
-      } catch (error) {
-        toast.error(error.message);
-      }
-    };
-
-    fetchLocations();
-  }, []);
-
-  // Fetch already selected items when location changes
-  useEffect(() => {
-    const fetchSelectedItems = async () => {
-      if (selectedLocation) {
-        try {
-          const response = await axiosInstance.get(
-            `/things-to-carry/${selectedLocation}`
-          );
-          const selectedItemNames = response.data.data.map((item) => item.name);
-          setAlreadySelectedItems(selectedItemNames); // Store already selected items
-          setSelectedItems(selectedItemNames); // Mark them as selected in the UI
-        } catch (error) {
-          toast.error("Failed to fetch selected items");
-        }
-      } else {
-        setAlreadySelectedItems([]);
-        setSelectedItems([]);
-      }
-    };
-
-    fetchSelectedItems();
-  }, [selectedLocation]);
-
-  // Handle item selection
   const handleItemSelect = (item) => {
+    // Don't allow deselecting already selected items
+    if (alreadySelectedItems.includes(item)) {
+      return;
+    }
+
     setSelectedItems((prev) =>
       prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]
     );
   };
 
-  // Handle select all
   const handleSelectAll = () => {
     setSelectedItems((prev) =>
-      prev.length === staticItems.length ? [] : [...staticItems]
+      prev.length === staticItems.length
+        ? [...alreadySelectedItems]
+        : [...staticItems]
     );
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedLocation || selectedItems.length === 0) {
-      toast.error("Please select a location and at least one item");
+    if (!selectedLocation) {
+      toast.error('Please select a location');
+      return;
+    }
+
+    // Only submit items that are newly selected (not already selected)
+    const newItems = selectedItems.filter(
+      (item) => !alreadySelectedItems.includes(item)
+    );
+
+    if (newItems.length === 0) {
+      toast.error('No new items selected to add');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // Filter out items that are already selected for the location
-      const newItems = selectedItems.filter(
-        (item) => !alreadySelectedItems.includes(item)
-      );
-
-      // Submit only new items
-      await Promise.all(
-        newItems.map((item) =>
-          axiosInstance.post("/things-to-carry", {
-            name: item,
-            location_id: selectedLocation,
-          })
-        )
-      );
-
-      toast.success("Items added successfully");
-      setSelectedItems([]);
-      setSelectedLocation("");
-    } catch (error) {
-      toast.error("Failed to add items");
+      await onAddItems(newItems);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-lg shadow-md">
-      <div className="p-6">
-        <h2 className="text-lg font-medium mb-4">Add Things to Carry</h2>
+    <div className="flex flex-col h-full">
+      <div className="flex justify-between items-center p-6 border-b">
+        <h2 className="text-lg font-medium">Add Things to Carry</h2>
+        <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col flex-1">
@@ -132,15 +80,18 @@ const AddItemForm = () => {
               <select
                 id="location"
                 value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
+                onChange={(e) => onLocationChange(e.target.value)}
                 className="border rounded-md px-3 py-2 w-full"
               >
-                <option value="">Select a location</option>
-                {locations.map((location) => (
-                  <option key={location._id} value={location._id}>
-                    {location.name}
-                  </option>
-                ))}
+                {locations.length === 0 ? (
+                  <option value="">Select a location</option>
+                ) : (
+                  locations.map((location) => (
+                    <option key={location._id} value={location._id}>
+                      {location.name}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 
@@ -153,8 +104,8 @@ const AddItemForm = () => {
               >
                 <Pencil className="w-4 h-4" />
                 {selectedItems.length === staticItems.length
-                  ? "Deselect All"
-                  : "Select All"}
+                  ? 'Deselect All'
+                  : 'Select All'}
               </button>
             </div>
 
@@ -165,10 +116,13 @@ const AddItemForm = () => {
                   type="button"
                   onClick={() => handleItemSelect(item)}
                   className={`border-2 px-3 py-2 rounded-lg transition-colors ${
-                    selectedItems.includes(item)
-                      ? "bg-[#E27D60] text-white border-[#E27D60]"
-                      : "border-gray-300 hover:border-[#E27D60]"
+                    alreadySelectedItems.includes(item)
+                      ? 'bg-gray-300 text-gray-600 border-gray-300 cursor-not-allowed'
+                      : selectedItems.includes(item)
+                      ? 'bg-[#E27D60] text-white border-[#E27D60]'
+                      : 'border-gray-300 hover:border-[#E27D60]'
                   }`}
+                  disabled={alreadySelectedItems.includes(item)}
                 >
                   {item}
                 </button>
@@ -180,23 +134,13 @@ const AddItemForm = () => {
         <div className="p-6 border-t bg-white mt-auto">
           <div className="flex justify-end gap-4">
             <button
-              type="button"
-              onClick={() => {
-                setSelectedItems([]);
-                setSelectedLocation("");
-              }}
-              className="border text-black font-medium py-2 px-4 rounded-lg"
-            >
-              Clear
-            </button>
-            <button
               type="submit"
               disabled={isSubmitting}
               className={`bg-[#E27D60] text-white font-medium py-2 px-4 rounded-lg ${
-                isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             >
-              {isSubmitting ? "Adding..." : "Save"}
+              {isSubmitting ? 'Adding...' : 'Add Items'}
             </button>
           </div>
         </div>
